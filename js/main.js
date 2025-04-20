@@ -26,7 +26,10 @@ const config = {
     minScale: 100,          // Minimum zoom level
     maxScale: 1000,         // Maximum zoom level
     zoomSensitivity: 0.1,   // How fast zooming happens
-    currentScale: Math.min(width, height) * 0.4  // Now width/height are defined
+    currentScale: Math.min(width, height) * 0.4,  // Now width/height are defined
+    lastGuess: null,      // Stores the last guess information
+    guessMarker: null,    // Reference to the guess marker element
+    travelLine: null      // Reference to the travel line element
 };
 
 // DOM elements
@@ -39,7 +42,6 @@ const elements = {
     modeEasy: document.getElementById('mode-easy'),
     modeHard: document.getElementById('mode-hard'),
     gameInfo: document.querySelector('.game-info'),
-    gameModeSelection: document.querySelector('.game-mode-selection'),
     countryInfo: document.getElementById('country-info'),
     countryName: document.getElementById('country-name'),
     flagContainer: document.getElementById('flag-container'),
@@ -90,6 +92,18 @@ let touchState = {
 
 // Initialize the globe
 function initGlobe() {
+    // Add this at the beginning of the function
+    svg.append('defs').append('marker')
+        .attr('id', 'arrowhead')
+        .attr('markerWidth', 4)
+        .attr('markerHeight', 3)
+        .attr('refX', 0)
+        .attr('refY', 1.5)
+        .attr('orient', 'auto')
+        .append('path')
+        .attr('d', 'M0,0 L4,1.5 L0,3 Z')
+        .attr('fill', 'white');
+    
     // Prevent default wheel behavior
     svg.on("wheel.zoom", () => {}).on("wheel", handleZoom);
     
@@ -111,6 +125,9 @@ function initGlobe() {
         .attr('cy', height / 2)
         .attr('r', projection.scale());
 
+    // Initialize the path generator
+    const path = d3.geoPath().projection(projection);
+    
     loadGeoData();
 }
 
@@ -221,7 +238,7 @@ async function loadGeoData() {
 // Draw countries on the globe
 function drawCountries(countries) {
     // Clear existing countries
-    globeGroup.selectAll('.country').remove();
+    globeGroup.selectAll('.country, .country-boundary').remove();
     
     // Draw countries
     const countryElements = globeGroup.selectAll('.country')
@@ -234,17 +251,29 @@ function drawCountries(countries) {
         .attr('data-name', d => d.properties.name)
         .on('click', handleCountryClick);
     
-    // Clear existing boundaries
-    globeGroup.selectAll('.country-boundary').remove();
-    
-    // Only draw boundaries in Hard mode
+    // Remove ALL boundaries in Hard Mode
     if (config.gameMode === 'hard') {
+        countryElements
+            .style('stroke', 'none') // Remove borders
+            .style('opacity', 0.8) // Fixed opacity (no hover effect)
+            .on('mouseover', null) // Remove hover events
+            .on('mouseout', null);
+    } else {
+        // Easy Mode behavior (with borders and hover)
         globeGroup.selectAll('.country-boundary')
             .data(countries)
             .enter()
             .append('path')
             .attr('class', 'country-boundary')
             .attr('d', path);
+        
+        countryElements
+            .on('mouseover', function() {
+                d3.select(this).style('opacity', 1);
+            })
+            .on('mouseout', function() {
+                d3.select(this).style('opacity', 0.8);
+            });
     }
 }
 
@@ -258,30 +287,33 @@ function handleCountryClick(event, d) {
     const guessedCountry = d;
     const targetCountry = config.currentCountry;
     
-    // Calculate distance between guess and target
-    const distance = calculateDistance(guessedCountry, targetCountry);
+    // Store the clicked position in geographic coordinates
+    const clickedCoords = projection.invert(d3.pointer(event));
+    config.lastGuess = {
+        screenCoords: d3.pointer(event),
+        geoCoords: clickedCoords,
+        targetCountry: targetCountry,
+        targetCentroid: d3.geoCentroid(targetCountry)
+    };
     
-    // Determine score based on distance
+    // Calculate distance and score
+    const distance = calculateDistance(guessedCountry, targetCountry);
     let pointsAwarded = 0;
     let resultClass = '';
     
     if (guessedCountryId === targetCountry.id) {
-        // Correct guess
         pointsAwarded = 1000;
         resultClass = 'correct';
         playSound(elements.sounds.correct);
     } else if (distance <= 300) {
-        // Within 300km
         pointsAwarded = 500;
         resultClass = 'close';
         playSound(elements.sounds.close);
     } else if (distance <= 500) {
-        // Within 500km
         pointsAwarded = 100;
         resultClass = 'somewhat-close';
         playSound(elements.sounds.close);
     } else {
-        // Wrong guess
         pointsAwarded = 0;
         resultClass = 'wrong';
         playSound(elements.sounds.wrong);
@@ -291,40 +323,35 @@ function handleCountryClick(event, d) {
     config.score += pointsAwarded;
     elements.score.textContent = config.score;
     
-    // Highlight the guessed country
-    d3.select(`#country-${guessedCountryId}`)
-        .classed(`country-highlight ${resultClass}`, true);
-    
     // Highlight the target country
     d3.select(`#country-${targetCountry.id}`)
         .classed(`country-highlight ${resultClass}`, true);
     
-    // Add guess marker
-    const coords = d3.pointer(event);
-    globeGroup.append('circle')
+    // Clear previous markers
+    globeGroup.selectAll('.guess-marker, .travel-line').remove();
+    
+    // Add persistent guess marker
+    config.guessMarker = globeGroup.append('circle')
         .attr('class', 'guess-marker')
-        .attr('cx', coords[0])
-        .attr('cy', coords[1])
+        .attr('cx', config.lastGuess.screenCoords[0])
+        .attr('cy', config.lastGuess.screenCoords[1])
         .attr('r', 5);
     
-    // Draw travel line
-    const targetCoords = projection(d3.geoCentroid(targetCountry));
-    if (targetCoords && !isNaN(targetCoords[0]) && !isNaN(targetCoords[1])) {
-        globeGroup.append('path')
-            .attr('class', 'travel-line')
-            .attr('d', `M${coords[0]},${coords[1]}L${targetCoords[0]},${targetCoords[1]}`);
-    }
+    // Create curved line along the globe surface
+    createCurvedLine(config.lastGuess.geoCoords, config.lastGuess.targetCentroid);
     
     // Add country to guessed countries
     config.guessedCountries.push(targetCountry.id);
     
-    // Stop timer
+    // Stop timer but keep rotation enabled
     clearInterval(config.timer);
+    config.rotating = true; // Ensure rotation can continue
+    startRotation(); // Restart rotation
     
     // Show country info
     showCountryInfo(targetCountry);
     
-    // Update game status
+    // Update game status (but don't disable interaction)
     config.gameInProgress = false;
 }
 
@@ -409,8 +436,10 @@ function startNewRound() {
     config.startTime = Date.now();
     startTimer();
     
-    // Update game status
+    // Update game status and ensure rotation is enabled
     config.gameInProgress = true;
+    config.rotating = true;
+    startRotation();
 }
 
 // Start the game timer
@@ -438,16 +467,25 @@ function updateCountriesLeft() {
 function startRotation() {
     if (!config.rotating) return;
     
-    d3.timer(function(elapsed) {
-        if (!config.rotating) return true;
+    let lastTime = 0;
+    const rotationLoop = (time) => {
+        if (!config.rotating) return;
         
-        const rotate = projection.rotate();
-        const k = sensitivity / projection.scale(); // Scale sensitivity by zoom level
-        projection.rotate([rotate[0] - 0.1 * k, rotate[1]]);
+        // Limit updates to ~60fps
+        if (time - lastTime > 16) {
+            const rotate = projection.rotate();
+            const k = sensitivity / projection.scale();
+            projection.rotate([rotate[0] - 0.1 * k, rotate[1]]);
+            
+            // Update without transitions
+            updateGlobe();
+            lastTime = time;
+        }
         
-        updateGlobe();
-        return false;
-    });
+        requestAnimationFrame(rotationLoop);
+    };
+    
+    requestAnimationFrame(rotationLoop);
 }
 
 // Drag functions
@@ -458,7 +496,7 @@ function dragStarted() {
 
 function dragged(event) {
     const rotate = projection.rotate();
-    const k = sensitivity / projection.scale(); // Scale sensitivity by zoom level
+    const k = sensitivity / projection.scale();
     
     projection.rotate([
         rotate[0] + event.dx * k,
@@ -466,7 +504,13 @@ function dragged(event) {
         rotate[2]
     ]);
     
-    updateGlobe();
+    // Use requestAnimationFrame for smoother updates
+    if (!this._frame) {
+        this._frame = requestAnimationFrame(() => {
+            updateGlobe();
+            this._frame = null;
+        });
+    }
 }
 
 // Start the game with selected mode
@@ -475,9 +519,12 @@ function startGame(mode) {
     config.score = 0;
     config.guessedCountries = [];
     
-    elements.score.textContent = '0';
-    elements.gameModeSelection.classList.add('hidden');
+    // Hide start screen
+    document.getElementById('start-screen').classList.add('hidden');
+    
+    // Show game UI
     elements.gameInfo.classList.remove('hidden');
+    elements.countryInfo.classList.remove('hidden');
     
     // Clear any previous countries and boundaries
     globeGroup.selectAll('.country, .country-boundary').remove();
@@ -489,13 +536,13 @@ function startGame(mode) {
     startNewRound();
 }
 
-// Event listeners
-elements.modeEasy.addEventListener('click', () => {
+// Update event listeners to use the start screen buttons
+document.getElementById('mode-easy').addEventListener('click', () => {
     playSound(elements.sounds.click);
     startGame('easy');
 });
 
-elements.modeHard.addEventListener('click', () => {
+document.getElementById('mode-hard').addEventListener('click', () => {
     playSound(elements.sounds.click);
     startGame('hard');
 });
@@ -516,12 +563,12 @@ function resetGame() {
     config.gameInProgress = false;
     config.guessedCountries = [];
     config.score = 0;
+    config.lastGuess = null;
     
     elements.score.textContent = '0';
     elements.timer.textContent = '00:00';
     elements.countryInfo.classList.add('hidden');
     elements.gameInfo.classList.add('hidden');
-    elements.gameModeSelection.classList.remove('hidden');
     
     // Clear all visual elements
     globeGroup.selectAll('.country, .country-boundary, .guess-marker, .travel-line').remove();
@@ -538,42 +585,51 @@ window.addEventListener('resize', () => {
 function handleZoom(event) {
     event.preventDefault();
     
-    // Handle both wheel and touch events
     let delta;
     if (event.type === 'wheel') {
         delta = -event.deltaY * config.zoomSensitivity;
     } else if (event.type === 'touchmove' && event.touches.length === 2) {
-        // Touch zoom is handled separately in handleTouchMove
         return;
     }
     
-    // Calculate new scale
     config.currentScale = Math.max(
         config.minScale,
         Math.min(config.maxScale, config.currentScale + delta)
     );
     
-    // Update projection
     projection.scale(config.currentScale);
-    
-    // Redraw everything
     updateGlobe();
 }
 
 function updateGlobe() {
-    // Update globe elements with smooth transition
+    // Update the path generator with the new projection
+    const path = d3.geoPath().projection(projection);
+    
+    // Update all paths without transitions
     globeGroup.selectAll('path')
-        .transition()
-        .duration(100)
         .attr('d', path);
-        
+    
+    // Update the sphere (background circle)
     globeGroup.select('.sphere')
-        .transition()
-        .duration(100)
         .attr('r', projection.scale());
     
-    // Update stars (if needed)
+    // Update stars
     updateStars();
+    
+    // Update the guess marker and travel line if they exist
+    if (config.lastGuess) {
+        // Update guess marker position
+        const newMarkerPos = projection(config.lastGuess.geoCoords);
+        if (newMarkerPos && !isNaN(newMarkerPos[0])) {
+            config.guessMarker
+                .attr('cx', newMarkerPos[0])
+                .attr('cy', newMarkerPos[1]);
+        }
+        
+        // Recreate the curved line with updated positions
+        globeGroup.selectAll('.travel-line').remove();
+        createCurvedLine(config.lastGuess.geoCoords, config.lastGuess.targetCentroid);
+    }
 }
 
 // Add this function at the top of your script
@@ -626,4 +682,58 @@ function getTouchDistance(touch1, touch2) {
     const dx = touch1.clientX - touch2.clientX;
     const dy = touch1.clientY - touch2.clientY;
     return Math.sqrt(dx * dx + dy * dy);
+}
+
+// Debounce function to limit rapid updates
+function debounce(func, wait) {
+    let timeout;
+    return function() {
+        const context = this, args = arguments;
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(context, args), wait);
+    };
+}
+
+// Apply debounce to updateGlobe (e.g., 50ms delay)
+const debouncedUpdateGlobe = debounce(updateGlobe, 50);
+
+function createCurvedLine(startCoords, endCoords) {
+    // Get projected screen coordinates
+    const start = projection(startCoords);
+    const end = projection(endCoords);
+    
+    if (!start || !end || isNaN(start[0]) || isNaN(end[0])) return;
+    
+    // Calculate midpoint and direction vector
+    const midX = (start[0] + end[0]) / 2;
+    const midY = (start[1] + end[1]) / 2;
+    const dx = end[0] - start[0];
+    const dy = end[1] - start[1];
+    
+    // Calculate the normal vector (perpendicular to the line)
+    const normalX = -dy;
+    const normalY = dx;
+    
+    // Normalize the normal vector
+    const length = Math.sqrt(normalX * normalX + normalY * normalY);
+    const normalizedX = normalX / length;
+    const normalizedY = normalY / length;
+    
+    // Calculate control point (push outward from globe center)
+    const centerX = width / 2;
+    const centerY = height / 2;
+    const pushDirection = (midX - centerX) * normalizedX + (midY - centerY) * normalizedY > 0 ? 1 : -1;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+    const curveStrength = distance * 0.3; // Adjust this value for more/less curve
+    
+    const controlX = midX + normalizedX * curveStrength * pushDirection;
+    const controlY = midY + normalizedY * curveStrength * pushDirection;
+    
+    // Create the quadratic Bézier curve
+    const pathData = `M${start[0]},${start[1]} Q${controlX},${controlY} ${end[0]},${end[1]}`;
+    
+    // Add the curved line to the globe
+    config.travelLine = globeGroup.append('path')
+        .attr('class', 'travel-line')
+        .attr('d', pathData);
 } 
