@@ -1,7 +1,7 @@
 // No imports needed as we're using CDN for d3 and topojson
 
 // First define width/height
-const width = window.innerWidth - 300;
+const width = window.innerWidth;
 const height = window.innerHeight;
 const sensitivity = 75;
 
@@ -65,10 +65,13 @@ const projection = d3.geoOrthographic()
 
 const path = d3.geoPath().projection(projection);
 
-// Create SVG container
+// Create SVG container with centered viewBox
 const svg = elements.globe.append('svg')
-    .attr('width', width)
-    .attr('height', height);
+    .attr('width', '100%')
+    .attr('height', '100%')
+    .attr('viewBox', `0 0 ${window.innerWidth} ${window.innerHeight}`)
+    .attr('preserveAspectRatio', 'xMidYMid meet')
+    .style('touch-action', 'none');
 
 // Add this after creating the SVG container
 svg.on("wheel", handleZoom);
@@ -337,8 +340,16 @@ function handleCountryClick(event, d) {
         .attr('cy', config.lastGuess.screenCoords[1])
         .attr('r', 5);
     
-    // Create curved line along the globe surface
-    createCurvedLine(config.lastGuess.geoCoords, config.lastGuess.targetCentroid);
+    // Create the travel line path (initially zero length)
+    const targetCoords = projection(config.lastGuess.targetCentroid);
+    config.travelLine = globeGroup.append('path')
+        .attr('class', 'travel-line')
+        .attr('d', `M${config.lastGuess.screenCoords[0]},${config.lastGuess.screenCoords[1]}L${config.lastGuess.screenCoords[0]},${config.lastGuess.screenCoords[1]}`)
+        .attr('stroke-dasharray', '0,1000') // Start with no visible line
+        .attr('stroke-dashoffset', 0);
+    
+    // Animate the line drawing
+    animateTravelLine(config.lastGuess.screenCoords, targetCoords);
     
     // Add country to guessed countries
     config.guessedCountries.push(targetCountry.id);
@@ -371,28 +382,35 @@ function calculateDistance(country1, country2) {
 async function showCountryInfo(country) {
     elements.countryName.textContent = country.properties.name;
     
-    // Fetch country flag and facts
     try {
         const response = await fetch(`https://restcountries.com/v3.1/alpha/${country.id}`);
         const countryData = await response.json();
         const data = countryData[0];
         
-        // Display flag
-        elements.flagContainer.innerHTML = `<img src="${data.flags.png}" alt="${data.name.common} flag">`;
+        // Flag
+        elements.flagContainer.innerHTML = `
+            <h3>${data.name.common}</h3>
+            <img src="${data.flags.png}" alt="${data.name.common} flag">
+        `;
         
-        // Display facts
+        // Facts
         const facts = `
-            <p><strong>Capital:</strong> ${data.capital ? data.capital[0] : 'N/A'}</p>
-            <p><strong>Population:</strong> ${data.population.toLocaleString()}</p>
-            <p><strong>Region:</strong> ${data.region}</p>
-            <p><strong>Languages:</strong> ${Object.values(data.languages || {}).join(', ') || 'N/A'}</p>
-            <p><strong>Currency:</strong> ${Object.values(data.currencies || {}).map(c => c.name).join(', ') || 'N/A'}</p>
+            <div class="fact-group">
+                <h4>Quick Facts</h4>
+                <p><strong>Capital:</strong> ${data.capital ? data.capital[0] : 'N/A'}</p>
+                <p><strong>Population:</strong> ${data.population.toLocaleString()}</p>
+                <p><strong>Region:</strong> ${data.region}</p>
+            </div>
+            <div class="fact-group">
+                <h4>Details</h4>
+                <p><strong>Languages:</strong> ${Object.values(data.languages || {}).join(', ') || 'N/A'}</p>
+                <p><strong>Currency:</strong> ${Object.values(data.currencies || {}).map(c => c.name).join(', ') || 'N/A'}</p>
+            </div>
         `;
         
         elements.countryFacts.innerHTML = facts;
     } catch (error) {
         elements.countryFacts.innerHTML = '<p>Error loading country data</p>';
-        console.error('Error fetching country data:', error);
     }
     
     elements.countryInfo.classList.remove('hidden');
@@ -516,15 +534,16 @@ function dragged(event) {
 // Start the game with selected mode
 function startGame(mode) {
     config.gameMode = mode;
-    config.score = 0;
-    config.guessedCountries = [];
+    
+    // Show game info panel
+    document.getElementById('game-info-container').classList.remove('hidden');
     
     // Hide start screen
     document.getElementById('start-screen').classList.add('hidden');
     
-    // Show game UI
-    elements.gameInfo.classList.remove('hidden');
-    elements.countryInfo.classList.remove('hidden');
+    // Rest of initialization...
+    config.score = 0;
+    config.guessedCountries = [];
     
     // Clear any previous countries and boundaries
     globeGroup.selectAll('.country, .country-boundary').remove();
@@ -563,15 +582,20 @@ function resetGame() {
     config.gameInProgress = false;
     config.guessedCountries = [];
     config.score = 0;
-    config.lastGuess = null;
     
-    elements.score.textContent = '0';
-    elements.timer.textContent = '00:00';
-    elements.countryInfo.classList.add('hidden');
-    elements.gameInfo.classList.add('hidden');
+    // Hide game info panel
+    document.getElementById('game-info-container').classList.add('hidden');
+    
+    // Show start screen
+    document.getElementById('start-screen').classList.remove('hidden');
     
     // Clear all visual elements
     globeGroup.selectAll('.country, .country-boundary, .guess-marker, .travel-line').remove();
+    
+    // Reset UI elements
+    elements.score.textContent = '0';
+    elements.timer.textContent = '00:00';
+    elements.countryInfo.classList.add('hidden');
 }
 
 // Initialize the game
@@ -592,9 +616,11 @@ function handleZoom(event) {
         return;
     }
     
+    // Calculate new scale relative to window size
+    const baseScale = Math.min(width, height) * 0.4;
     config.currentScale = Math.max(
-        config.minScale,
-        Math.min(config.maxScale, config.currentScale + delta)
+        baseScale * 0.5,  // min zoom
+        Math.min(baseScale * 3, config.currentScale + delta)  // max zoom
     );
     
     projection.scale(config.currentScale);
@@ -602,33 +628,40 @@ function handleZoom(event) {
 }
 
 function updateGlobe() {
-    // Update the path generator with the new projection
+    // Update paths with new projection
     const path = d3.geoPath().projection(projection);
     
-    // Update all paths without transitions
+    // Update all elements
     globeGroup.selectAll('path')
         .attr('d', path);
     
-    // Update the sphere (background circle)
+    // Update sphere size
     globeGroup.select('.sphere')
         .attr('r', projection.scale());
     
-    // Update stars
+    // Update stars and other elements
     updateStars();
     
-    // Update the guess marker and travel line if they exist
-    if (config.lastGuess) {
-        // Update guess marker position
-        const newMarkerPos = projection(config.lastGuess.geoCoords);
-        if (newMarkerPos && !isNaN(newMarkerPos[0])) {
-            config.guessMarker
-                .attr('cx', newMarkerPos[0])
-                .attr('cy', newMarkerPos[1]);
-        }
+    // Update markers and travel line if they exist
+    if (config.lastGuess && config.travelLine && config.guessMarker) {
+        const targetCoords = projection(config.lastGuess.targetCentroid);
+        const currentMarkerPos = projection(config.lastGuess.geoCoords) || config.lastGuess.screenCoords;
         
-        // Recreate the curved line with updated positions
-        globeGroup.selectAll('.travel-line').remove();
-        createCurvedLine(config.lastGuess.geoCoords, config.lastGuess.targetCentroid);
+        if (targetCoords && !isNaN(targetCoords[0]) && currentMarkerPos && !isNaN(currentMarkerPos[0])) {
+            // Update marker position
+            config.guessMarker
+                .attr('cx', currentMarkerPos[0])
+                .attr('cy', currentMarkerPos[1]);
+            
+            // Recreate the curved path
+            const pathData = generateCurvedPath(currentMarkerPos, targetCoords);
+            config.travelLine.attr('d', pathData);
+            
+            // Restore animation if it was running
+            if (config.travelLine.classed('animated')) {
+                config.travelLine.call(animateDashes);
+            }
+        }
     }
 }
 
@@ -697,43 +730,102 @@ function debounce(func, wait) {
 // Apply debounce to updateGlobe (e.g., 50ms delay)
 const debouncedUpdateGlobe = debounce(updateGlobe, 50);
 
+function generateCurvedPath(startCoords, endCoords) {
+    // Create great circle interpolator
+    const interpolator = d3.geoInterpolate(
+        projection.invert(startCoords),
+        projection.invert(endCoords)
+    );
+    
+    // Generate points along the great circle path
+    const points = [];
+    const steps = 20; // Number of intermediate points
+    for (let i = 0; i <= steps; i++) {
+        points.push(interpolator(i / steps));
+    }
+    
+    // Convert to SVG path data
+    let pathData = "M";
+    points.forEach((point, i) => {
+        const projected = projection(point);
+        if (projected && !isNaN(projected[0])) {
+            if (i > 0) pathData += "L";
+            pathData += projected[0] + "," + projected[1];
+        }
+    });
+    
+    return pathData;
+}
+
+// Add to event listeners section
+document.getElementById('make-guess').addEventListener('click', () => {
+    // Show instructions for clicking on the globe
+    alert("Click on the globe to make your guess!");
+});
+
+function animateTravelLine(startCoords, endCoords) {
+    if (!config.travelLine || !startCoords || !endCoords) return;
+    
+    // Calculate the full path
+    const pathData = `M${startCoords[0]},${startCoords[1]}L${endCoords[0]},${endCoords[1]}`;
+    
+    // Get the total length of the path
+    const pathNode = config.travelLine.node();
+    pathNode.setAttribute('d', pathData);
+    const length = pathNode.getTotalLength();
+    
+    // Reset the path for animation
+    config.travelLine
+        .attr('stroke-dasharray', `${length},${length}`)
+        .attr('stroke-dashoffset', length)
+        .transition()
+        .duration(1000)
+        .ease(d3.easeLinear)
+        .attr('stroke-dashoffset', 0)
+        .on('end', () => {
+            // After animation completes, set the final path
+            config.travelLine.attr('d', pathData);
+        });
+}
+
 function createCurvedLine(startCoords, endCoords) {
-    // Get projected screen coordinates
+    // Calculate the midpoint pushed outward from globe center
     const start = projection(startCoords);
     const end = projection(endCoords);
+    const center = [width/2, height/2];
     
-    if (!start || !end || isNaN(start[0]) || isNaN(end[0])) return;
+    // Calculate midpoint and push it outward
+    const midX = (start[0] + end[0])/2;
+    const midY = (start[1] + end[1])/2;
+    const dx = midX - center[0];
+    const dy = midY - center[1];
+    const dist = Math.sqrt(dx*dx + dy*dy);
+    const pushFactor = 1.2;
     
-    // Calculate midpoint and direction vector
-    const midX = (start[0] + end[0]) / 2;
-    const midY = (start[1] + end[1]) / 2;
-    const dx = end[0] - start[0];
-    const dy = end[1] - start[1];
+    const controlX = midX + (dx/dist) * pushFactor * 50;
+    const controlY = midY + (dy/dist) * pushFactor * 50;
     
-    // Calculate the normal vector (perpendicular to the line)
-    const normalX = -dy;
-    const normalY = dx;
-    
-    // Normalize the normal vector
-    const length = Math.sqrt(normalX * normalX + normalY * normalY);
-    const normalizedX = normalX / length;
-    const normalizedY = normalY / length;
-    
-    // Calculate control point (push outward from globe center)
-    const centerX = width / 2;
-    const centerY = height / 2;
-    const pushDirection = (midX - centerX) * normalizedX + (midY - centerY) * normalizedY > 0 ? 1 : -1;
-    const distance = Math.sqrt(dx * dx + dy * dy);
-    const curveStrength = distance * 0.3; // Adjust this value for more/less curve
-    
-    const controlX = midX + normalizedX * curveStrength * pushDirection;
-    const controlY = midY + normalizedY * curveStrength * pushDirection;
-    
-    // Create the quadratic Bézier curve
+    // Create quadratic Bézier curve
     const pathData = `M${start[0]},${start[1]} Q${controlX},${controlY} ${end[0]},${end[1]}`;
     
-    // Add the curved line to the globe
+    // Add the curved line to the globe with continuous animation
     config.travelLine = globeGroup.append('path')
         .attr('class', 'travel-line')
-        .attr('d', pathData);
+        .attr('d', pathData)
+        .attr('stroke-dasharray', '5,3') // Dash pattern
+        .attr('stroke-dashoffset', 0)
+        .call(animateDashes); // Start continuous animation
+}
+
+// Continuous dash animation
+function animateDashes(selection) {
+    selection.transition()
+        .duration(1000)
+        .ease(d3.easeLinear)
+        .attr('stroke-dashoffset', -8) // Reverse direction (negative value)
+        .on('end', function() {
+            d3.select(this)
+                .attr('stroke-dashoffset', 0)
+                .call(animateDashes); // Loop animation
+        });
 } 

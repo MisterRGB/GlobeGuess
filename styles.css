@@ -12,61 +12,68 @@ body {
 }
 
 .container {
-    display: flex;
-    height: 100vh;
+    /* Remove this if it's no longer needed */
 }
 
-.left-panel {
-    width: 300px;
-    background-color: var(--md-sys-color-surface);
-    padding: 20px;
-    overflow-y: auto;
-    z-index: 2;
-    display: flex;
-    flex-direction: column;
-    height: 100vh;
-    border-right: 1px solid var(--md-sys-color-outline);
+.game-info-container {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    z-index: 100;
+    pointer-events: auto;
+    transition: opacity 0.3s ease;
 }
 
-.left-panel .game-info {
-    margin-bottom: 20px;
-    padding: 16px;
-    background-color: var(--md-sys-color-surface-variant);
+.game-info {
+    background-color: rgba(30, 30, 30, 0.9);
     border-radius: 16px;
+    padding: 12px;
+    min-width: 200px;
+    max-width: 220px;
 }
 
-.left-panel .country-info {
-    flex: 1;
-    overflow-y: auto;
-    background-color: var(--md-sys-color-surface-variant);
-    border-radius: 16px;
-    padding: 16px;
-    margin-top: 16px;
+.game-info h2 {
+    font-size: 15px;
+    margin-bottom: 6px;
+}
+
+.game-info div {
+    font-size: 12px;
+    margin: 4px 0;
+}
+
+.game-info button {
+    padding: 8px 12px;
+    font-size: 12px;
+    margin: 4px 0;
 }
 
 .globe-container {
-    flex: 1;
-    position: relative;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
     background: radial-gradient(ellipse at center, #1a2a3a 0%, #000 100%);
     overflow: hidden;
-    touch-action: none; /* Prevent browser touch handling */
-}
-
-#globe {
-    width: 100%;
-    height: 100%;
-    position: relative;
-    z-index: 1;
-}
-
-#globe svg {
-    overflow: hidden;
-    -ms-touch-action: none;
     touch-action: none;
 }
 
+#globe {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+}
+
+#globe svg {
+    display: block;
+    margin: 0 auto;
+}
+
 .hidden {
-    display: none;
+    display: none !important;
 }
 
 button {
@@ -104,7 +111,10 @@ button:hover {
 }
 
 .timer, .score, .countries-left {
-    font-size: 1.1em;
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    margin: 4px 0;
 }
 
 .instructions {
@@ -207,10 +217,20 @@ button:hover {
     fill: none;
     stroke: white;
     stroke-width: 1.5px;
-    stroke-dasharray: 5, 5;
-    animation: dash 1s linear infinite;
-    filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.7));
+    stroke-dasharray: 5, 3; /* Dash pattern */
+    stroke-linecap: round;
     marker-end: url(#arrowhead);
+    filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.7));
+    animation: flow 1s linear infinite;
+}
+
+@keyframes flow {
+    0% {
+        stroke-dashoffset: 0;
+    }
+    100% {
+        stroke-dashoffset: 8; /* Matches dasharray sum (5 + 3) */
+    }
 }
 
 /* Add arrowhead marker */
@@ -227,12 +247,6 @@ button:hover {
     marker path {
         fill: white;
         d: path("M0,0 L4,1.5 L0,3 Z");
-    }
-}
-
-@keyframes dash {
-    to {
-        stroke-dashoffset: -10;
     }
 }
 
@@ -386,35 +400,6 @@ button:hover {
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
 }
 
-/* Left Panel - Android 15 Style */
-.left-panel {
-  width: 300px;
-  background-color: var(--md-sys-color-surface);
-  padding: 16px;
-  overflow-y: auto;
-  z-index: 2;
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-  border-right: 1px solid var(--md-sys-color-outline);
-}
-
-.left-panel .game-info {
-  margin-bottom: 16px;
-  padding: 16px;
-  background-color: var(--md-sys-color-surface-variant);
-  border-radius: 16px;
-}
-
-.left-panel .country-info {
-  flex: 1;
-  overflow-y: auto;
-  background-color: var(--md-sys-color-surface-variant);
-  border-radius: 16px;
-  padding: 16px;
-  margin-top: 16px;
-}
-
 /* Typography */
 h2, h3, .timer, .score, .countries-left {
   font-family: 'Roboto', sans-serif;
@@ -517,4 +502,68 @@ button:hover {
     fill: #f44336 !important;
     stroke: #f44336 !important;
     filter: drop-shadow(0 0 5px #f44336) !important;
+}
+
+/* New layout styles */
+.game-ui {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: space-between;
+    padding: 20px;
+    z-index: 100;
+    pointer-events: none;
+}
+
+.right-panel {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background-color: rgba(30, 30, 30, 0.9);
+    border-radius: 16px;
+    padding: 16px;
+    max-width: 300px;
+    max-height: 80vh;
+    overflow-y: auto;
+    z-index: 100;
+}
+
+.guess-button {
+    background-color: #1a73e8;
+    color: white;
+    font-weight: bold;
+    margin: 10px 0;
+    padding: 12px 24px;
+}
+
+/* Country info styles */
+.flag-container {
+    text-align: center;
+    margin-bottom: 15px;
+}
+
+.flag-container img {
+    max-width: 100%;
+    max-height: 120px;
+    border: 1px solid #444;
+}
+
+.country-facts {
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.country-facts p {
+    margin: 8px 0;
+}
+
+.left-panel, .right-panel {
+    display: none; /* Start hidden */
+}
+
+.left-panel:not(.hidden), 
+.right-panel:not(.hidden) {
+    display: block; /* Show when not hidden */
 } 
