@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Globe Guessing Game</title>
+    <link rel="stylesheet" href="styles.css">
+    <!-- CDN links for dependencies -->
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://unpkg.com/topojson-client@3.1.0/dist/topojson-client.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <div class="game-panel">
+            <div class="game-mode-selection">
+                <h2>Select Game Mode</h2>
+                <button id="mode-easy">Easy Mode (With Boundaries)</button>
+                <button id="mode-hard">Hard Mode (No Boundaries)</button>
+            </div>
+            
+            <div class="game-info hidden">
+                <h2>Country to Guess: <span id="country-to-guess">-</span></h2>
+                <div class="timer">Time: <span id="timer">00:00</span></div>
+                <div class="score">Score: <span id="score">0</span></div>
+                <div class="countries-left">Countries Left: <span id="countries-left">0</span></div>
+                <button id="reset-game">Reset Game</button>
+            </div>
+            
+            <div id="country-info" class="country-info hidden">
+                <h3 id="country-name"></h3>
+                <div id="flag-container"></div>
+                <div id="country-facts"></div>
+                <button id="next-country">Next Country</button>
+            </div>
+        </div>
+        
+        <div class="globe-container">
+            <div id="globe"></div>
+            <div id="instructions" class="instructions">
+                Click on the globe to guess the country
+            </div>
+        </div>
+    </div>
+    
+    <audio id="correct-sound" src="https://assets.mixkit.co/sfx/preview/mixkit-correct-answer-tone-2870.mp3" preload="auto"></audio>
+    <audio id="close-sound" src="https://assets.mixkit.co/sfx/preview/mixkit-arcade-game-jump-coin-216.mp3" preload="auto"></audio>
+    <audio id="wrong-sound" src="https://assets.mixkit.co/sfx/preview/mixkit-wrong-answer-fail-notification-946.mp3" preload="auto"></audio>
+    <audio id="click-sound" src="https://assets.mixkit.co/sfx/preview/mixkit-select-click-1109.mp3" preload="auto"></audio>
+    
+    <!-- Using script tag directly instead of module -->
+    <script src="js/main.js"></script>
+</body>
+</html> 

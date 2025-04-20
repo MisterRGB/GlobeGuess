@@ -1,0 +1,18 @@
+# Dependencies
+node_modules/
+.parcel-cache/
+package-lock.json
+
+# Build files
+dist/
+build/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor directories and files
+.idea/
+.vscode/
+*.swp
+*.swo 
