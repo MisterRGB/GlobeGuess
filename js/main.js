@@ -178,7 +178,9 @@ function initGlobe() {
     // Initialize the path generator
     const path = d3.geoPath().projection(projection);
     
-    loadGeoData();
+    if (window.innerWidth > 768) {
+      loadGlobe(); // Desktop only
+    }
 }
 
 // Create 3D stars with different depths
@@ -1059,4 +1061,20 @@ document.addEventListener('click', (e) => {
     if (!rightPanel.contains(e.target) && !e.target.closest('.panel-handle')) {
         rightPanel.classList.remove('visible');
     }
-}); 
+});
+
+// Throttle globe animation
+let lastFrameTime = 0;
+function animateGlobe(time) {
+  if (time - lastFrameTime > 30) { // ~30 FPS
+    globe.rotation.y += 0.01;
+    lastFrameTime = time;
+  }
+  requestAnimationFrame(animateGlobe);
+}
+animateGlobe();
+
+function handleClick() {
+  // Game logic
+}
+document.getElementById('guessButton').addEventListener('click', _.throttle(handleClick, 300)); // Lodash 
