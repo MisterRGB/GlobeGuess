@@ -42,8 +42,7 @@ const elements = {
     modeEasy: document.getElementById('mode-easy'),
     modeHard: document.getElementById('mode-hard'),
     gameInfo: document.querySelector('.game-info'),
-    countryInfo: document.getElementById('country-info'),
-    countryName: document.getElementById('country-name'),
+    rightPanel: document.getElementById('right-panel'),
     flagContainer: document.getElementById('flag-container'),
     countryFacts: document.getElementById('country-facts'),
     nextCountry: document.getElementById('next-country'),
@@ -55,6 +54,12 @@ const elements = {
         click: document.getElementById('click-sound')
     }
 };
+
+// Add this after the DOM elements definition
+elements.nextCountry.style.fontSize = '14px';
+elements.nextCountry.style.padding = '8px 16px';
+elements.resetGame.style.fontSize = '14px';
+elements.resetGame.style.padding = '8px 16px';
 
 // Then define projection
 const projection = d3.geoOrthographic()
@@ -93,8 +98,50 @@ let touchState = {
     initialScale: null
 };
 
+// Add this mapping object and function (e.g., near the top or before showCountryInfo)
+const countryCodeMapping = {
+    "004": "af", "008": "al", "012": "dz", "016": "as", "020": "ad", "024": "ao", "028": "ag", "031": "az", "032": "ar",
+    "036": "au", "040": "at", "044": "bs", "048": "bh", "050": "bd", "051": "am", "052": "bb", "056": "be", "060": "bm",
+    "064": "bt", "068": "bo", "070": "ba", "072": "bw", "076": "br", "084": "bz", "090": "sb", "092": "vg", "096": "bn",
+    "100": "bg", "104": "mm", "108": "bi", "112": "by", "116": "kh", "120": "cm", "124": "ca", "132": "cv", "136": "ky",
+    "140": "cf", "144": "lk", "148": "td", "152": "cl", "156": "cn", "158": "tw", "162": "cx", "166": "cc", "170": "co",
+    "174": "km", "175": "yt", "178": "cg", "180": "cd", "184": "ck", "188": "cr", "191": "hr", "192": "cu", "196": "cy",
+    "203": "cz", "204": "bj", "208": "dk", "212": "dm", "214": "do", "218": "ec", "222": "sv", "226": "gq", "231": "et",
+    "232": "er", "233": "ee", "234": "fo", "238": "fk", "242": "fj", "246": "fi", "248": "ax", "250": "fr", "254": "gf",
+    "258": "pf", "260": "tf", "262": "dj", "266": "ga", "268": "ge", "270": "gm", "275": "ps", "276": "de", "288": "gh",
+    "292": "gi", "296": "ki", "300": "gr", "304": "gl", "308": "gd", "312": "gp", "316": "gu", "320": "gt", "324": "gn",
+    "328": "gy", "332": "ht", "336": "va", "340": "hn", "344": "hk", "348": "hu", "352": "is", "356": "in", "360": "id",
+    "364": "ir", "368": "iq", "372": "ie", "376": "il", "380": "it", "384": "ci", "388": "jm", "392": "jp", "398": "kz",
+    "400": "jo", "404": "ke", "408": "kp", "410": "kr", "414": "kw", "417": "kg", "418": "la", "422": "lb", "426": "ls",
+    "428": "lv", "430": "lr", "434": "ly", "438": "li", "440": "lt", "442": "lu", "446": "mo", "450": "mg", "454": "mw",
+    "458": "my", "462": "mv", "466": "ml", "470": "mt", "474": "mq", "478": "mr", "480": "mu", "484": "mx", "492": "mc",
+    "496": "mn", "498": "md", "499": "me", "500": "ms", "504": "ma", "508": "mz", "512": "om", "516": "na", "520": "nr",
+    "524": "np", "528": "nl", "531": "cw", "533": "aw", "534": "sx", "535": "bq", "540": "nc", "548": "vu", "554": "nz",
+    "558": "ni", "562": "ne", "566": "ng", "570": "nu", "574": "nf", "578": "no", "580": "mp", "581": "um", "583": "fm",
+    "584": "mh", "585": "pw", "586": "pk", "591": "pa", "598": "pg", "600": "py", "604": "pe", "608": "ph", "612": "pn",
+    "616": "pl", "620": "pt", "624": "gw", "626": "tl", "630": "pr", "634": "qa", "638": "re", "642": "ro", "643": "ru",
+    "646": "rw", "652": "bl", "654": "sh", "659": "kn", "660": "ai", "662": "lc", "663": "mf", "666": "pm", "670": "vc",
+    "674": "sm", "678": "st", "682": "sa", "686": "sn", "688": "rs", "690": "sc", "694": "sl", "702": "sg", "703": "sk",
+    "704": "vn", "705": "si", "706": "so", "710": "za", "716": "zw", "724": "es", "728": "ss", "729": "sd", "732": "eh",
+    "740": "sr", "744": "sj", "748": "sz", "752": "se", "756": "ch", "760": "sy", "762": "tj", "764": "th", "768": "tg",
+    "772": "tk", "776": "to", "780": "tt", "784": "ae", "788": "tn", "792": "tr", "795": "tm", "796": "tc", "798": "tv",
+    "800": "ug", "804": "ua", "807": "mk", "818": "eg", "826": "gb", "831": "gg", "832": "je", "833": "im", "834": "tz",
+    "840": "us", "850": "vi", "854": "bf", "858": "uy", "860": "uz", "862": "ve", "876": "wf", "882": "ws", "887": "ye",
+    "894": "zm"
+    // Note: Antarctica (010) and some disputed territories might not have standard codes/flags
+};
+
+function getAlpha2Code(numericId) {
+    // Ensure numericId is a string, padded if needed (e.g., '8' -> '008')
+    const paddedId = String(numericId).padStart(3, '0');
+    return countryCodeMapping[paddedId];
+}
+
 // Initialize the globe
 function initGlobe() {
+    // Ensure game info is HIDDEN at initialization
+    document.getElementById('game-info-container').classList.add('hidden');
+    
     // Add this at the beginning of the function
     svg.append('defs').append('marker')
         .attr('id', 'arrowhead')
@@ -262,13 +309,15 @@ function drawCountries(countries) {
             .on('mouseover', null) // Remove hover events
             .on('mouseout', null);
     } else {
-        // Easy Mode behavior (with borders and hover)
+        // Easy Mode behavior (with white borders and hover)
         globeGroup.selectAll('.country-boundary')
             .data(countries)
             .enter()
             .append('path')
             .attr('class', 'country-boundary')
-            .attr('d', path);
+            .attr('d', path)
+            .style('stroke', ' #002e5f ') // Add white borders
+            .style('stroke-width', '0.5px');
         
         countryElements
             .on('mouseover', function() {
@@ -362,6 +411,9 @@ function handleCountryClick(event, d) {
     elements.nextCountry.disabled = false;
     elements.nextCountry.classList.remove('disabled');
     
+    // Unhide right panel immediately (before zoom)
+    elements.rightPanel.classList.remove('hidden');
+    
     // Zoom to the target country
     const centroid = d3.geoCentroid(targetCountry);
     const zoomScale = Math.min(width, height) * 0.8; // Larger zoom scale
@@ -394,10 +446,10 @@ function handleCountryClick(event, d) {
         })
         .on("end", function() {
             // Show country info after zoom completes
-            showCountryInfo(targetCountry);
-            
-            // Update game status (but don't disable interaction)
-            config.gameInProgress = false;
+    showCountryInfo(targetCountry);
+    
+    // Update game status (but don't disable interaction)
+    config.gameInProgress = false;
         });
 }
 
@@ -413,43 +465,108 @@ function calculateDistance(country1, country2) {
     return distance * 6371;
 }
 
-// Show country information
+// Show country information (Updated)
 async function showCountryInfo(country) {
-    elements.countryName.textContent = country.properties.name;
+    if (!country?.id) return;
+
+    const numericId = country.id;
+    const alpha2Code = getAlpha2Code(numericId); // Get the alpha-2 code
+    const countryName = country.properties.name;
     
+    if (!alpha2Code) {
+        console.warn(`No alpha-2 code found for numeric ID: ${numericId} (${countryName})`);
+        // Handle cases where mapping might be missing (optional)
+    }
+
     try {
-        const response = await fetch(`https://restcountries.com/v3.1/alpha/${country.id}`);
-        const countryData = await response.json();
-        const data = countryData[0];
+        // Load facts from local facts.json
+        const factsResponse = await fetch('data/facts.json');
+        const factsData = await factsResponse.json();
+
+        // Find matching country facts by name
+        const countryFacts = factsData[countryName] || "No facts available for this country.";
         
-        // Flag
+        // Use alpha2Code for the flag path
         elements.flagContainer.innerHTML = `
-            <h3>${data.name.common}</h3>
-            <img src="${data.flags.png}" alt="${data.name.common} flag">
-        `;
-        
-        // Facts
-        const facts = `
-            <div class="fact-group">
-                <h4>Quick Facts</h4>
-                <p><strong>Capital:</strong> ${data.capital ? data.capital[0] : 'N/A'}</p>
-                <p><strong>Population:</strong> ${data.population.toLocaleString()}</p>
-                <p><strong>Region:</strong> ${data.region}</p>
-            </div>
-            <div class="fact-group">
-                <h4>Details</h4>
-                <p><strong>Languages:</strong> ${Object.values(data.languages || {}).join(', ') || 'N/A'}</p>
-                <p><strong>Currency:</strong> ${Object.values(data.currencies || {}).map(c => c.name).join(', ') || 'N/A'}</p>
+            <div class="country-header" style="display: flex; align-items: center; gap: 10px;">
+                <img src="flags/${alpha2Code ? alpha2Code.toLowerCase() : 'unknown'}.svg" 
+                     alt="${countryName} flag" 
+                     class="country-flag"
+                     style="width: 64px; height: auto; border: 1px solid #ddd;"
+                     onerror="handleFlagError(this, '${alpha2Code || numericId}')"> 
+                <h2 style="margin: 0; font-size: 24px;">${countryName}</h2>
             </div>
         `;
         
-        elements.countryFacts.innerHTML = facts;
+        // Parse and format the facts if available
+        if (typeof countryFacts === 'string') {
+            // Split the facts string into individual sentences
+            const factSections = countryFacts.split('. ').filter(section => section.trim().length > 0);
+            
+            let formattedFacts = '<div class="formatted-facts">';
+            
+            factSections.forEach(section => {
+                // Extract the heading (text before the first colon)
+                const colonIndex = section.indexOf(':');
+                if (colonIndex > 0) {
+                    const heading = section.substring(0, colonIndex);
+                    let content = section.substring(colonIndex + 1).trim();
+                    
+                    // Get appropriate icon for each heading
+                    const icon = getFactIcon(heading);
+                    
+                    // Special handling for currency to ensure consistent formatting
+                    if (heading === 'Currency') {
+                        content = content.replace(/\(.*\)/g, '').trim();
+                    }
+                    
+                    formattedFacts += `
+                        <div class="fact-item">
+                            <span class="fact-icon" style="font-size: 0.8em">${icon}</span>
+                            <div class="fact-content">
+                                <strong>${heading}:</strong> ${content}
+            </div>
+                        </div>`;
+                } else {
+                    formattedFacts += `
+                        <div class="fact-item">
+                            ${section}
+                        </div>`;
+                }
+            });
+            
+            formattedFacts += '</div>';
+            elements.countryFacts.innerHTML = formattedFacts;
+        } else {
+            elements.countryFacts.innerHTML = '<div class="error">Invalid facts format</div>';
+        }
+        
+        elements.rightPanel.classList.remove('hidden');
     } catch (error) {
-        elements.countryFacts.innerHTML = '<p>Error loading country data</p>';
+        console.error('Error loading country facts:', error);
+        elements.countryFacts.innerHTML = '<div class="error">Failed to load facts</div>';
+        elements.rightPanel.classList.remove('hidden');
     }
     
-    elements.countryInfo.classList.remove('hidden');
     updateCountriesLeft();
+}
+
+// Helper function to get icons for fact categories
+function getFactIcon(heading) {
+    const iconMap = {
+        'Capital': '🏛️',
+        'Languages': '🗣️',
+        'Population': '👥',
+        'Currency': '💰',
+        'Known for': '🌟',
+        'Also famous for': '⭐',
+        'Food': '🍽️',
+        'Religion': '🙏',
+        'Climate': '☀️',
+        'Brief History': '📜'
+    };
+    
+    return iconMap[heading] || 'ℹ️';
 }
 
 // Select a random country to guess
@@ -468,32 +585,42 @@ function selectRandomCountry() {
 
 // Start a new round
 function startNewRound() {
-    // Hide country info panel
-    elements.countryInfo.classList.add('hidden');
+    // Ensure game info panel is visible
+    document.getElementById('game-info-container').classList.remove('hidden');
     
-    // Clear previous guess markers and travel lines
+    // Hide country info panel
+    if (elements.rightPanel) {
+        elements.rightPanel.classList.add('hidden');
+    }
+    
+    // Clear previous guess markers
     globeGroup.selectAll('.guess-marker, .travel-line').remove();
     
     // Disable next country button at start of round
-    elements.nextCountry.disabled = true;
-    elements.nextCountry.classList.add('disabled');
+    if (elements.nextCountry) {
+        elements.nextCountry.disabled = true;
+        elements.nextCountry.classList.add('disabled');
+    }
     
     // Select a new country
     config.currentCountry = selectRandomCountry();
     
     if (!config.currentCountry) {
-        // No more countries
+        // Game completed
+        alert('Congratulations! You have guessed all countries!');
         return;
     }
     
     // Display the country name to guess
+    if (elements.countryToGuess) {
     elements.countryToGuess.textContent = config.currentCountry.properties.name;
+    }
     
     // Reset timer
     config.startTime = Date.now();
     startTimer();
     
-    // Update game status and ensure rotation is enabled
+    // Update game state
     config.gameInProgress = true;
     config.rotating = true;
     startRotation();
@@ -574,13 +701,13 @@ function dragged(event) {
 function startGame(mode) {
     config.gameMode = mode;
     
-    // Show game info panel
-    document.getElementById('game-info-container').classList.remove('hidden');
-    
     // Hide start screen
     document.getElementById('start-screen').classList.add('hidden');
     
-    // Rest of initialization...
+    // Show game info panel (now visible ONLY during gameplay)
+    document.getElementById('game-info-container').classList.remove('hidden');
+    
+    // Reset game state
     config.score = 0;
     config.guessedCountries = [];
     
@@ -617,12 +744,7 @@ elements.resetGame.addEventListener('click', () => {
 
 // Reset the game
 function resetGame() {
-    clearInterval(config.timer);
-    config.gameInProgress = false;
-    config.guessedCountries = [];
-    config.score = 0;
-    
-    // Hide game info panel
+    // Hide game info panel (returns to start screen)
     document.getElementById('game-info-container').classList.add('hidden');
     
     // Show start screen
@@ -632,13 +754,25 @@ function resetGame() {
     globeGroup.selectAll('.country, .country-boundary, .guess-marker, .travel-line').remove();
     
     // Reset UI elements
-    elements.score.textContent = '0';
-    elements.timer.textContent = '00:00';
-    elements.countryInfo.classList.add('hidden');
+    if (elements.score) elements.score.textContent = '0';
+    if (elements.timer) elements.timer.textContent = '00:00';
+    
+    // Hide country info panel
+    if (elements.rightPanel) {
+        elements.rightPanel.classList.add('hidden');
+    }
+    
+    // Reset game state
+    clearInterval(config.timer);
+    config.gameInProgress = false;
+    config.guessedCountries = [];
+    config.score = 0;
 }
 
 // Initialize the game
-window.addEventListener('load', initGlobe);
+window.addEventListener('DOMContentLoaded', () => {
+    initGlobe();
+});
 
 // Handle window resize
 window.addEventListener('resize', () => {
@@ -704,13 +838,30 @@ function updateGlobe() {
     }
 }
 
-// Add this function at the top of your script
-function playSound(sound) {
+// Sound handling
+function preloadSounds() {
+    const soundIds = ['correct', 'close', 'wrong', 'click'];
+    soundIds.forEach(id => {
+        const sound = elements.sounds[id];
     if (sound) {
+            sound.load().catch(e => {
+                console.warn(`Failed to load ${id} sound:`, e);
+            });
+        }
+    });
+}
+
+function playSound(sound) {
+    if (!sound) return;
+    
+    try {
+        // Reset sound to start if already playing
+        sound.currentTime = 0;
         sound.play().catch(e => {
-            console.log("Sound playback prevented:", e);
-            // Implement fallback or silent failure
+            console.warn("Sound playback prevented:", e);
         });
+    } catch (e) {
+        console.warn("Sound error:", e);
     }
 }
 
@@ -796,11 +947,13 @@ function generateCurvedPath(startCoords, endCoords) {
     return pathData;
 }
 
-// Add to event listeners section
+// Remove the event listener for the deleted 'make-guess' button
+/*
 document.getElementById('make-guess').addEventListener('click', () => {
     // Show instructions for clicking on the globe
     alert("Click on the globe to make your guess!");
 });
+*/
 
 function animateTravelLine(startCoords, endCoords) {
     if (!config.travelLine || !startCoords || !endCoords) return;
@@ -867,4 +1020,12 @@ function animateDashes(selection) {
                 .attr('stroke-dashoffset', 0)
                 .call(animateDashes); // Loop animation
         });
+}
+
+// Updated handleFlagError function
+function handleFlagError(imgElement, code) {
+    console.error(`Flag not found for code: ${code}. Attempted path: ${imgElement.src}`); // More specific error
+    imgElement.onerror = null; // Prevent infinite loops
+    imgElement.src = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgNTAiPjxyZWN0IHdpZHRoPSIxMDAiIGhlaWdodD0iNTAiIGZpbGw9IiNmMGYwZjAiLz48Y2lyY2xlIGN4PSI1MCIgY3k9IjI1IiByPSIxNSIgZmlsbD0iIzFhNzNlOCIvPjx0ZXh0IHg9IjUwIiB5PSIzMCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1zaXplPSIxMCIgZmlsbD0id2hpdGUiPj88L3RleHQ+PC9zdmc+';
+    imgElement.style.opacity = '0.7';
 } 

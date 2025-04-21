@@ -5,12 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Globe Guessing Game</title>
     <link rel="stylesheet" href="styles.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>��</text></svg>">
     <!-- CDN links for dependencies -->
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <script src="https://unpkg.com/topojson-client@3.1.0/dist/topojson-client.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/lipis/flag-icons@7.2.3/css/flag-icons.min.css">
 </head>
 <body>
-    <div class="start-screen" id="start-screen">
+    <!-- Start Screen (visible initially) -->
+    <div id="start-screen" class="start-screen">
         <h1>Globe Explorer</h1>
         <p>Test your geography knowledge with this interactive globe game</p>
         <div class="mode-buttons">
@@ -25,7 +28,8 @@
         </div>
     </div>
 
-    <div class="game-info-container hidden" id="game-info-container">
+    <!-- Game Info Panel (hidden initially) -->
+    <div id="game-info-container" class="game-info-container hidden">
         <div class="game-info">
             <h2>Country to Guess</h2>
             <div id="country-to-guess">-</div>
@@ -36,7 +40,7 @@
             
             <div class="button-group">
                 <button id="next-country" disabled>Next Country</button>
-                <button id="reset-game">Reset Game</button>
+            <button id="reset-game">Reset Game</button>
             </div>
         </div>
     </div>
@@ -45,10 +49,12 @@
         <!-- ... existing content ... -->
     </div>
 
-    <div class="right-panel hidden" id="right-panel">
-        <div id="country-info" class="country-info">
-            <div class="flag-container" id="flag-container"></div>
-            <div class="country-facts" id="country-facts"></div>
+    <div id="right-panel" class="right-panel hidden">
+        <div id="flag-container"></div>
+        <div id="country-facts">
+            <div class="loading-fact" style="width:80%"></div>
+            <div class="loading-fact" style="width:90%"></div>
+            <div class="loading-fact" style="width:70%"></div>
         </div>
     </div>
 
@@ -56,10 +62,10 @@
         <div id="globe" style="width: 100%; height: 100%;"></div>
     </div>
     
-    <audio id="correct-sound" src="https://assets.mixkit.co/sfx/preview/mixkit-correct-answer-tone-2870.mp3" preload="auto"></audio>
-    <audio id="close-sound" src="https://assets.mixkit.co/sfx/preview/mixkit-arcade-game-jump-coin-216.mp3" preload="auto"></audio>
-    <audio id="wrong-sound" src="https://assets.mixkit.co/sfx/preview/mixkit-wrong-answer-fail-notification-946.mp3" preload="auto"></audio>
-    <audio id="click-sound" src="https://assets.mixkit.co/sfx/preview/mixkit-select-click-1109.mp3" preload="auto"></audio>
+    <audio id="correct-sound" src="sounds/correct.mp3" preload="auto"></audio>
+    <audio id="close-sound" src="sounds/close.mp3" preload="auto"></audio>
+    <audio id="wrong-sound" src="sounds/wrong.mp3" preload="auto"></audio>
+    <audio id="click-sound" src="sounds/click.mp3" preload="auto"></audio>
     
     <!-- Using script tag directly instead of module -->
     <script src="js/main.js"></script>
