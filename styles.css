@@ -107,8 +107,12 @@ button:hover {
 }
 
 #country-to-guess {
-    font-weight: bold;
-    color: var(--md-sys-color-primary);
+    font-size: 1.3em;
+    font-weight: 600;
+    color: var(--md-sys-color-primary, #6ea6ff);
+    margin: 8px 0 12px 0;
+    display: block;
+    text-align: center;
 }
 
 .timer, .score, .countries-left {
@@ -406,6 +410,7 @@ button:hover {
 h2, h3, .timer, .score, .countries-left {
   font-family: 'Roboto', sans-serif;
   color: var(--md-sys-color-on-surface);
+  text-align: center;
 }
 
 h2 {
@@ -676,7 +681,8 @@ button.disabled:hover {
     }
 
     .right-panel .flag-container h3 {
-        font-size: 18px;
+        font-size: 1.4em;
+        margin-bottom: 8px;
     }
 
     .right-panel .flag-container img {
@@ -698,5 +704,29 @@ button.disabled:hover {
 
     .right-panel .fact-group p {
         margin: 5px 0;
+    }
+
+    /* Mobile style for the country to guess */
+    #country-to-guess {
+        font-size: 1.1em;
+        font-weight: 500;
+        margin: 5px 0 8px 0;
+        text-align: center;
+    }
+
+    .game-info h2 {
+        font-size: 14px;
+        margin-bottom: 4px;
+    }
+
+    /* Mobile style for country name in the info panel */
+    .right-panel .flag-container h3 {
+        font-size: 1.4em;
+        margin-bottom: 8px;
+    }
+
+    .right-panel .flag-container img {
+        max-height: 100px;
+        margin-top: 5px;
     }
 } 
