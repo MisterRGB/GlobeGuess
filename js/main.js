@@ -356,14 +356,49 @@ function handleCountryClick(event, d) {
     
     // Stop timer but keep rotation enabled
     clearInterval(config.timer);
-    config.rotating = true; // Ensure rotation can continue
-    startRotation(); // Restart rotation
+    config.rotating = false; // Disable rotation during zoom
     
-    // Show country info
-    showCountryInfo(targetCountry);
+    // Enable next country button
+    elements.nextCountry.disabled = false;
+    elements.nextCountry.classList.remove('disabled');
     
-    // Update game status (but don't disable interaction)
-    config.gameInProgress = false;
+    // Zoom to the target country
+    const centroid = d3.geoCentroid(targetCountry);
+    const zoomScale = Math.min(width, height) * 0.8; // Larger zoom scale
+    
+    d3.transition()
+        .duration(1000)
+        .tween("zoom", function() {
+            const r = d3.interpolate(projection.rotate(), [-centroid[0], -centroid[1], 0]);
+            const s = d3.interpolate(projection.scale(), zoomScale);
+            return function(t) {
+                projection.rotate(r(t)).scale(s(t));
+                globeGroup.selectAll('path').attr('d', path);
+                globeGroup.select('.sphere').attr('r', projection.scale());
+                
+                // Update guess marker position
+                if (config.guessMarker) {
+                    const newPos = projection(config.lastGuess.geoCoords);
+                    config.guessMarker
+                        .attr('cx', newPos[0])
+                        .attr('cy', newPos[1]);
+                }
+                
+                // Update travel line
+                if (config.travelLine) {
+                    const newTargetPos = projection(config.lastGuess.targetCentroid);
+                    config.travelLine
+                        .attr('d', `M${projection(config.lastGuess.geoCoords)[0]},${projection(config.lastGuess.geoCoords)[1]}L${newTargetPos[0]},${newTargetPos[1]}`);
+                }
+            };
+        })
+        .on("end", function() {
+            // Show country info after zoom completes
+            showCountryInfo(targetCountry);
+            
+            // Update game status (but don't disable interaction)
+            config.gameInProgress = false;
+        });
 }
 
 // Calculate distance between two countries
@@ -438,6 +473,10 @@ function startNewRound() {
     
     // Clear previous guess markers and travel lines
     globeGroup.selectAll('.guess-marker, .travel-line').remove();
+    
+    // Disable next country button at start of round
+    elements.nextCountry.disabled = true;
+    elements.nextCountry.classList.add('disabled');
     
     // Select a new country
     config.currentCountry = selectRandomCountry();

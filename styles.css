@@ -17,19 +17,20 @@ body {
 
 .game-info-container {
     position: absolute;
-    top: 10px;
-    left: 10px;
-    z-index: 100;
+    top: 20px;
+    left: 20px;
+    z-index: 101;
     pointer-events: auto;
     transition: opacity 0.3s ease;
 }
 
 .game-info {
     background-color: rgba(30, 30, 30, 0.9);
-    border-radius: 16px;
-    padding: 12px;
-    min-width: 200px;
-    max-width: 220px;
+    border-radius: 12px;
+    padding: 15px;
+    min-width: 220px;
+    max-width: 240px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
 }
 
 .game-info h2 {
@@ -313,6 +314,7 @@ button:hover {
   --md-sys-color-on-surface-variant: #44464f;
   --md-sys-color-outline: #74777f;
   --md-sys-color-shadow: #000000;
+  --top-bar-height: 75px;
 }
 
 /* Dark mode */
@@ -522,12 +524,23 @@ button:hover {
     top: 20px;
     right: 20px;
     background-color: rgba(30, 30, 30, 0.9);
-    border-radius: 16px;
+    border-radius: 12px;
     padding: 16px;
     max-width: 300px;
-    max-height: 80vh;
+    max-height: calc(100vh - 40px);
     overflow-y: auto;
     z-index: 100;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    opacity: 0;
+    transform: translateX(20px);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    pointer-events: none;
+}
+
+.right-panel:not(.hidden) {
+    opacity: 1;
+    transform: translateX(0);
+    pointer-events: auto;
 }
 
 .guess-button {
@@ -566,4 +579,124 @@ button:hover {
 .left-panel:not(.hidden), 
 .right-panel:not(.hidden) {
     display: block; /* Show when not hidden */
+}
+
+button.disabled {
+    background-color: #666 !important;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+button.disabled:hover {
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+    .game-info-container {
+        left: 0;
+        right: 0;
+        top: 0;
+        width: 100%;
+        position: fixed;
+        z-index: 101;
+        border-radius: 0;
+        padding: 0;
+        background-color: rgba(25, 25, 25, 0.95);
+        box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        position: fixed;
+    }
+
+    .game-info {
+        max-width: 100%;
+        width: 100%;
+        border-radius: 0;
+        padding: 8px 12px;
+        box-shadow: none;
+        background-color: transparent;
+    }
+
+    .game-info h2 {
+        font-size: 14px;
+        margin-bottom: 4px;
+    }
+
+    .game-info div {
+        font-size: 12px;
+        margin: 2px 0;
+    }
+
+    .game-info button {
+        width: auto;
+        margin: 0;
+        flex: 1;
+        padding: 8px;
+        font-size: 12px;
+    }
+
+    .game-info .button-group {
+        display: flex;
+        justify-content: space-around;
+        gap: 8px;
+        margin-top: 5px;
+    }
+
+    .right-panel {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        width: 100%;
+        max-width: 100%;
+        height: 100vh;
+        max-height: 100vh;
+        background-color: rgba(40, 40, 40, 1);
+        border-radius: 0;
+        padding: 15px;
+        padding-top: calc(var(--top-bar-height) + 15px);
+        overflow-y: auto;
+        z-index: 100;
+        box-shadow: none;
+        border-top: none;
+        transform: translateY(100%);
+        transition: transform 0.35s ease-in-out;
+        opacity: 1;
+        pointer-events: none;
+    }
+
+    .right-panel:not(.hidden) {
+        transform: translateY(0);
+        pointer-events: auto;
+    }
+
+    .right-panel .flag-container {
+        margin-top: 10px;
+    }
+
+    .right-panel .flag-container h3 {
+        font-size: 18px;
+    }
+
+    .right-panel .flag-container img {
+        max-height: 100px;
+        margin-top: 5px;
+    }
+
+    .right-panel .country-facts {
+        font-size: 13px;
+    }
+
+    .right-panel .fact-group h4 {
+        font-size: 15px;
+        margin-top: 15px;
+        margin-bottom: 5px;
+        padding-bottom: 3px;
+        border-bottom: 1px solid #555;
+    }
+
+    .right-panel .fact-group p {
+        margin: 5px 0;
+    }
 } 
