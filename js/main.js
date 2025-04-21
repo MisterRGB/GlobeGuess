@@ -1028,4 +1028,35 @@ function handleFlagError(imgElement, code) {
     imgElement.onerror = null; // Prevent infinite loops
     imgElement.src = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgNTAiPjxyZWN0IHdpZHRoPSIxMDAiIGhlaWdodD0iNTAiIGZpbGw9IiNmMGYwZjAiLz48Y2lyY2xlIGN4PSI1MCIgY3k9IjI1IiByPSIxNSIgZmlsbD0iIzFhNzNlOCIvPjx0ZXh0IHg9IjUwIiB5PSIzMCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1zaXplPSIxMCIgZmlsbD0id2hpdGUiPj88L3RleHQ+PC9zdmc+';
     imgElement.style.opacity = '0.7';
-} 
+}
+
+// Toggle the panel's expanded state
+function togglePanel() {
+    const rightPanel = document.querySelector('.right-panel');
+    rightPanel.classList.toggle('expanded');
+}
+
+// Initialize the mobile panel (run on load/resize)
+function setupMobilePanel() {
+    if (window.innerWidth <= 768) {
+        const rightPanel = document.querySelector('.right-panel');
+        if (!rightPanel.querySelector('.panel-toggle')) {
+            const toggleButton = document.createElement('div');
+            toggleButton.className = 'panel-toggle';
+            toggleButton.textContent = 'Country Facts'; // Customize label
+            toggleButton.addEventListener('click', togglePanel);
+            rightPanel.insertBefore(toggleButton, rightPanel.firstChild);
+        }
+    }
+}
+
+// Set up event listeners
+window.addEventListener('load', setupMobilePanel);
+window.addEventListener('resize', setupMobilePanel);
+
+document.addEventListener('click', (e) => {
+    const rightPanel = document.querySelector('.right-panel');
+    if (!rightPanel.contains(e.target) && !e.target.closest('.panel-handle')) {
+        rightPanel.classList.remove('visible');
+    }
+}); 
