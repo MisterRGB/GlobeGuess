@@ -137,6 +137,20 @@ function getAlpha2Code(numericId) {
     return countryCodeMapping[paddedId];
 }
 
+// Add this near the top with other utility functions
+function isMobile() {
+    return window.innerWidth <= 768;
+}
+
+// Add this with other utility functions
+function handleResize() {
+    if (isMobile() && config.gameInProgress) {
+        document.getElementById('globe').style.height = '125%';
+    } else {
+        document.getElementById('globe').style.height = '100%';
+    }
+}
+
 // Initialize the globe
 function initGlobe() {
     // Ensure game info is HIDDEN at initialization
@@ -309,22 +323,26 @@ function drawCountries(countries) {
             .on('mouseover', null) // Remove hover events
             .on('mouseout', null);
     } else {
-        // Easy Mode behavior (with white borders and hover)
-        globeGroup.selectAll('.country-boundary')
-            .data(countries)
-            .enter()
-            .append('path')
-            .attr('class', 'country-boundary')
-            .attr('d', path)
-            .style('stroke', ' #002e5f ') // Add white borders
-            .style('stroke-width', '0.5px');
-        
+        // Easy Mode behavior with enhanced borders
         countryElements
-            .on('mouseover', function() {
-                d3.select(this).style('opacity', 1);
+            .attr('opacity', d => 
+                d.id === config.currentCountry?.id ? 1 : 0.3
+            )
+            .style('stroke', d => 
+                d.id === config.currentCountry?.id ? '#1a73e8' : 'rgba(24, 69, 114, 0.41)'
+            )
+            .style('stroke-width', d => 
+                d.id === config.currentCountry?.id ? '1px' : '0.8px'
+            )
+            .on('mouseover', function(d) {
+                if (d.id === config.currentCountry?.id) {
+                    d3.select(this).style('opacity', 1);
+                }
             })
-            .on('mouseout', function() {
-                d3.select(this).style('opacity', 0.8);
+            .on('mouseout', function(d) {
+                if (d.id === config.currentCountry?.id) {
+                    d3.select(this).style('opacity', 1);
+                }
             });
     }
 }
@@ -700,16 +718,20 @@ function dragged(event) {
 // Start the game with selected mode
 function startGame(mode) {
     config.gameMode = mode;
+    config.gameInProgress = true;
+    config.score = 0;
+    elements.score.textContent = config.score;
     
     // Hide start screen
     document.getElementById('start-screen').classList.add('hidden');
     
-    // Show game info panel (now visible ONLY during gameplay)
-    document.getElementById('game-info-container').classList.remove('hidden');
+    // Show game info panel
+    elements.gameInfo.classList.remove('hidden');
     
-    // Reset game state
-    config.score = 0;
-    config.guessedCountries = [];
+    // Mobile-specific height change
+    if (isMobile()) {
+        document.getElementById('globe').style.height = '125%';
+    }
     
     // Clear any previous countries and boundaries
     globeGroup.selectAll('.country, .country-boundary').remove();
@@ -763,10 +785,34 @@ function resetGame() {
     }
     
     // Reset game state
-    clearInterval(config.timer);
     config.gameInProgress = false;
     config.guessedCountries = [];
-    config.score = 0;
+    clearInterval(config.timer);
+    
+    // Mobile-specific height reset
+    if (isMobile()) {
+        document.getElementById('globe').style.height = '100%';
+    }
+    
+    // Rest of the function...
+    elements.gameInfo.classList.add('hidden');
+    elements.countryToGuess.textContent = '';
+    elements.countryFacts.innerHTML = '';
+    elements.flagContainer.innerHTML = '';
+    
+    if (config.guessMarker) {
+        config.guessMarker.remove();
+        config.guessMarker = null;
+    }
+    
+    if (config.travelLine) {
+        config.travelLine.remove();
+        config.travelLine = null;
+    }
+    
+    // Reset rotation to initial state
+    config.currentRotation = [...config.initialRotation];
+    updateGlobe();
 }
 
 // Initialize the game
@@ -1020,7 +1066,7 @@ function animateDashes(selection) {
                 .attr('stroke-dashoffset', 0)
                 .call(animateDashes); // Loop animation
         });
-}
+} 
 
 // Updated handleFlagError function
 function handleFlagError(imgElement, code) {
@@ -1059,4 +1105,7 @@ document.addEventListener('click', (e) => {
     if (!rightPanel.contains(e.target) && !e.target.closest('.panel-handle')) {
         rightPanel.classList.remove('visible');
     }
-}); 
+});
+
+// Add this to initialization
+window.addEventListener('resize', debounce(handleResize, 200)); 

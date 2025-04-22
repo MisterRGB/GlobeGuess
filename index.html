@@ -3,9 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Globe Guessing Game</title>
+    <title>Globally Challenged</title>
     <link rel="stylesheet" href="styles.css">
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>��</text></svg>">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌍</text></svg>">
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Bungee+Inline&display=swap" rel="stylesheet">
     <!-- CDN links for dependencies -->
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <script src="https://unpkg.com/topojson-client@3.1.0/dist/topojson-client.min.js"></script>
@@ -14,8 +16,10 @@
 <body>
     <!-- Start Screen (visible initially) -->
     <div id="start-screen" class="start-screen">
-        <h1>Globe Explorer</h1>
-        <p>Test your geography knowledge with this interactive globe game</p>
+        <h1>Globally Challenged</h1>
+        <p>This game is to test your geography knowledge. You can choose between easy and for the more confident players, a HARD MODE. </p>
+        <p>The goal is to guess the where the country is located on the globe as fast and as accurately as possible.</p>
+        <p>You can rotate, pinch and zoom in and out of the globe.</p>
         <div class="mode-buttons">
             <button class="easy" id="mode-easy">
                 <span>Easy Mode</span>
@@ -40,7 +44,7 @@
             
             <div class="button-group">
                 <button id="next-country" disabled>Next Country</button>
-            <button id="reset-game">Reset Game</button>
+            <button id="reset-game">Exit Game</button>
             </div>
         </div>
     </div>
