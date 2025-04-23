@@ -29,7 +29,9 @@ const config = {
     currentScale: Math.min(width, height) * 0.4,  // Now width/height are defined
     lastGuess: null,      // Stores the last guess information
     guessMarker: null,    // Reference to the guess marker element
-    travelLine: null      // Reference to the travel line element
+    travelLine: null,      // Reference to the travel line element
+    isFullscreen: false,
+    pendingFullscreen: false
 };
 
 // DOM elements
@@ -52,7 +54,8 @@ const elements = {
         close: document.getElementById('close-sound'),
         wrong: document.getElementById('wrong-sound'),
         click: document.getElementById('click-sound')
-    }
+    },
+    fullscreenToggle: null
 };
 
 // Add this after the DOM elements definition
@@ -154,7 +157,7 @@ function handleResize() {
 // Add this near other variable declarations
 
 // Add this near the top with other config variables
-const isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
+const FORCE_DARK_MODE = true; // Set to false to revert to system preference
 
 // Initialize the globe
 function initGlobe() {
@@ -201,6 +204,18 @@ function initGlobe() {
 
     // Apply initial theme
     updateTheme();
+
+    // For first load, show a prompt instead of auto-fullscreen
+    if (!localStorage.getItem('fullscreenPromptShown')) {
+        setTimeout(() => {
+            const shouldFullscreen = confirm('For the best experience, we recommend fullscreen mode. Would you like to enable it now?');
+            if (shouldFullscreen) {
+                // Set flag to attempt fullscreen on first user click
+                config.pendingFullscreen = true;
+            }
+            localStorage.setItem('fullscreenPromptShown', 'true');
+        }, 1000);
+    }
 }
 
 // Create 3D stars with different depths
@@ -1116,44 +1131,105 @@ document.addEventListener('click', (e) => {
 // Add this to initialization
 window.addEventListener('resize', debounce(handleResize, 200));
 
-// Add this new function to handle theme changes
+// Update the theme function to use forced dark mode
 function updateTheme() {
-    const isNowDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    // Always use dark mode if forced, otherwise check system preference
+    const useDarkMode = FORCE_DARK_MODE || window.matchMedia('(prefers-color-scheme: dark)').matches;
     
-    // Update globe colors
+    // Globe colors
     globeGroup.select('.sphere')
-        .attr('fill', isNowDark ? '#0d1a26' : '#0d47a1');
+        .attr('fill', useDarkMode ? '#0d1a26' : '#0d47a1');
     
-    // Update country colors
+    // Country colors
     globeGroup.selectAll('.country')
-        .attr('fill', isNowDark ? '#2a4365' : '#4285f4')
-        .attr('stroke', isNowDark ? '#1e3a8a' : '#1a73e8');
+        .attr('fill', useDarkMode ? '#2a4365' : '#4285f4')
+        .attr('stroke', useDarkMode ? '#1e3a8a' : '#1a73e8');
     
-    // Update UI elements
+    // UI colors
     document.documentElement.style.setProperty(
         '--md-sys-color-primary', 
-        isNowDark ? '#a8c7ff' : '#1a73e8'
+        useDarkMode ? '#a8c7ff' : '#1a73e8'
     );
     
     document.documentElement.style.setProperty(
         '--md-sys-color-on-primary', 
-        isNowDark ? '#002f66' : '#ffffff'
+        useDarkMode ? '#002f66' : '#ffffff'
     );
     
-    // Update text colors
+    // Text and background colors
     const textElements = document.querySelectorAll('.game-info, .right-panel, #country-to-guess');
     textElements.forEach(el => {
-        el.style.color = isNowDark ? '#e2e2e6' : '#1a1c1e';
+        el.style.color = useDarkMode ? '#e2e2e6' : '#1a1c1e';
     });
     
-    // Update background colors
     const bgElements = document.querySelectorAll('.game-info, .right-panel');
     bgElements.forEach(el => {
-        el.style.backgroundColor = isNowDark ? 'rgba(30, 30, 30, 0.95)' : 'rgba(240, 240, 240, 0.95)';
+        el.style.backgroundColor = useDarkMode ? 'rgba(30, 30, 30, 0.95)' : 'rgba(240, 240, 240, 0.95)';
     });
 }
 
-// Add media query listener for theme changes
-window.matchMedia('(prefers-color-scheme: dark)').addListener(updateTheme);
+// Call this once during initialization
+updateTheme();
 
-// Update the existing :root CSS variables in styles.css to use these dynamic values 
+// Create fullscreen toggle button (same as before)
+elements.fullscreenToggle = document.createElement('div');
+elements.fullscreenToggle.className = 'fullscreen-toggle';
+elements.fullscreenToggle.innerHTML = '⛶';
+elements.fullscreenToggle.style.position = 'absolute';
+elements.fullscreenToggle.style.bottom = '20px';
+elements.fullscreenToggle.style.right = '20px';
+elements.fullscreenToggle.style.zIndex = '1000';
+elements.fullscreenToggle.style.cursor = 'pointer';
+elements.fullscreenToggle.style.fontSize = '24px';
+elements.fullscreenToggle.style.color = 'white';
+elements.fullscreenToggle.style.textShadow = '0 0 5px black';
+document.body.appendChild(elements.fullscreenToggle);
+
+// Fullscreen functions
+function enterFullscreen() {
+    if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen()
+            .then(() => {
+                config.isFullscreen = true;
+                elements.fullscreenToggle.textContent = '⛶';
+            })
+            .catch(err => {
+                console.log('Fullscreen error:', err);
+                config.pendingFullscreen = false;
+            });
+    }
+}
+
+function exitFullscreen() {
+    if (document.fullscreenElement) {
+        document.exitFullscreen()
+            .then(() => {
+                config.isFullscreen = false;
+                elements.fullscreenToggle.textContent = '⛶';
+            });
+    }
+}
+
+function toggleFullscreen() {
+    if (config.isFullscreen) {
+        exitFullscreen();
+    } else {
+        enterFullscreen();
+    }
+}
+
+// Event listeners
+elements.fullscreenToggle.addEventListener('click', toggleFullscreen);
+document.addEventListener('fullscreenchange', () => {
+    config.isFullscreen = !!document.fullscreenElement;
+    elements.fullscreenToggle.textContent = config.isFullscreen ? '⛶' : '⛶';
+    config.pendingFullscreen = false;
+});
+
+// Add this click handler to attempt fullscreen on any click if pending
+document.addEventListener('click', () => {
+    if (config.pendingFullscreen) {
+        enterFullscreen();
+    }
+});
+
