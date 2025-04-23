@@ -31,7 +31,9 @@ const config = {
     guessMarker: null,    // Reference to the guess marker element
     travelLine: null,      // Reference to the travel line element
     isFullscreen: false,
-    fullscreenRequested: false
+    fullscreenRequested: false,
+    correctGuesses: 0,
+    totalGuesses: 0
 };
 
 // DOM elements
@@ -57,7 +59,8 @@ const elements = {
     },
     fullscreenToggle: null,
     toggleStars: document.getElementById('toggle-stars-game'),
-    music: null
+    music: null,
+    guessAccuracy: document.getElementById('guess-accuracy')
 };
 
 // Add this after the DOM elements definition
@@ -368,6 +371,9 @@ function handleCountryClick(event, d) {
     const guessedCountry = d;
     const targetCountry = config.currentCountry;
     
+    // Track the guess
+    config.totalGuesses++;
+    
     // Store the clicked position in geographic coordinates
     const clickedCoords = projection.invert(d3.pointer(event));
     config.lastGuess = {
@@ -386,6 +392,7 @@ function handleCountryClick(event, d) {
         pointsAwarded = 1000;
         resultClass = 'correct';
         playSound(elements.sounds.correct);
+        config.correctGuesses++;
     } else if (distance <= 300) {
         pointsAwarded = 500;
         resultClass = 'close';
@@ -403,6 +410,7 @@ function handleCountryClick(event, d) {
     // Update score
     config.score += pointsAwarded;
     elements.score.textContent = config.score;
+    updateGuessAccuracy();
     
     // Highlight the target country
     d3.select(`#country-${targetCountry.id}`)
@@ -851,6 +859,9 @@ function resetGame() {
     // Reset rotation to initial state
     config.currentRotation = [...config.initialRotation];
     updateGlobe();
+    config.correctGuesses = 0;
+    config.totalGuesses = 0;
+    elements.guessAccuracy.textContent = '0%';
 }
 
 // Initialize the game
@@ -1217,6 +1228,13 @@ function toggleStars() {
 // Add event listener to the stars toggle button
 if (elements.toggleStars) {
     elements.toggleStars.addEventListener('click', toggleStars);
+}
+
+// Add a new function to calculate and update guess accuracy
+function updateGuessAccuracy() {
+    if (config.totalGuesses === 0) return;
+    const accuracy = Math.round((config.correctGuesses / config.totalGuesses) * 100);
+    elements.guessAccuracy.textContent = `${accuracy}%`;
 }
 
 

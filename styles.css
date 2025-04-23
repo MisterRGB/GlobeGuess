@@ -1200,6 +1200,59 @@ button.disabled:hover {
     justify-content: center;
 }
 
+.guess-accuracy {
+    display: inline-block;
+    background-color: rgba(30, 30, 30, 0.9);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 20px;
+    margin: 0 5px;
+    font-size: 14px;
+    font-weight: 500;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+    .stats-container, .countries-left-container {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        align-items: center;
+        gap: 8px;
+        width: 100%;
+    }
+    
+    .timer, .score, .countries-left, .guess-accuracy {
+        background-color: rgba(30, 30, 30, 0.9);
+        color: white;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 14px;
+        font-weight: 500;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        margin: 0;
+        flex: 1 1 auto;
+        min-width: calc(50% - 16px);
+        text-align: center;
+        white-space: nowrap;
+    }
+    
+    /* Ensure country name remains unchanged */
+    #country-to-guess {
+        font-size: 2em !important;
+        margin: 12px 0;
+    }
+    
+    /* Keep button sizes unchanged */
+    .button-group button {
+        padding: 12px 24px;
+        font-size: 14px;
+    }
+}
+
 /* Remove the existing timer and score styles */
 .game-info .timer, .game-info .score, .game-info .countries-left {
     display: inline;
@@ -1484,4 +1537,53 @@ button:disabled, .toggle-button:disabled, .mode-button:disabled {
 .next-country:disabled {
     color: #444 !important; /* Darker grey for disabled text */
     opacity: 0.7;
+}
+
+/* Desktop styles for stats elements */
+@media (min-width: 769px) {
+    .stats-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 10px;
+        width: 100%;
+    }
+    
+    .countries-left-container {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        width: 100%;
+        max-width: 200px;
+        margin: 0 auto;
+    }
+    
+    .timer, .score {
+        background-color: rgba(30, 30, 30, 0.9);
+        color: white;
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-size: 14px;
+        font-weight: 500;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        margin: 0;
+        text-align: center;
+        white-space: nowrap;
+    }
+    
+    .countries-left, .guess-accuracy {
+        background-color: rgba(30, 30, 30, 0.9);
+        color: white;
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-size: 14px;
+        font-weight: 500;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        margin: 0;
+        text-align: center;
+        white-space: nowrap;
+        width: 100%;
+    }
 } 
