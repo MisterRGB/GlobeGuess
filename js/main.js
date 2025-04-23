@@ -193,6 +193,11 @@ function initGlobe() {
     const path = d3.geoPath().projection(projection);
     
     loadGeoData();
+
+    // Add shooting stars group (behind the globe)
+    const shootingStars = svg.append('g')
+        .attr('class', 'shooting-stars')
+        .lower(); // Ensure it's behind everything else
 }
 
 // Create 3D stars with different depths
@@ -642,6 +647,9 @@ function startNewRound() {
     config.gameInProgress = true;
     config.rotating = true;
     startRotation();
+
+    // Start shooting stars
+    createShootingStar();
 }
 
 // Start the game timer
@@ -741,6 +749,9 @@ function startGame(mode) {
     
     // Start the first round
     startNewRound();
+
+    // Start shooting stars
+    createShootingStar();
 }
 
 // Update event listeners to use the start screen buttons
@@ -1108,4 +1119,59 @@ document.addEventListener('click', (e) => {
 });
 
 // Add this to initialization
-window.addEventListener('resize', debounce(handleResize, 200)); 
+window.addEventListener('resize', debounce(handleResize, 200));
+
+function createShootingStar() {
+    if (!config.gameInProgress) return;
+
+    // Random delay between shooting stars (3-8 seconds)
+    const delay = 3000 + Math.random() * 5000;
+    
+    setTimeout(() => {
+        const startX = Math.random() * width * 0.3;
+        const startY = Math.random() * height * 0.3;
+        const endX = width * 0.7 + Math.random() * width * 0.3;
+        const endY = height * 0.7 + Math.random() * height * 0.3;
+        
+        // Create shooting star with tail
+        const starGroup = shootingStars.append('g')
+            .attr('class', 'shooting-star-group');
+            
+        // Main line (bright core)
+        starGroup.append('line')
+            .attr('class', 'shooting-star-core')
+            .attr('x1', startX)
+            .attr('y1', startY)
+            .attr('x2', startX)
+            .attr('y2', startY)
+            .attr('stroke', 'white')
+            .attr('stroke-width', 2)
+            .attr('opacity', 0);
+
+        // Fainter tail
+        starGroup.append('line')
+            .attr('class', 'shooting-star-tail')
+            .attr('x1', startX)
+            .attr('y1', startY)
+            .attr('x2', startX)
+            .attr('y2', startY)
+            .attr('stroke', 'rgba(255, 255, 255, 0.7)')
+            .attr('stroke-width', 4)
+            .attr('opacity', 0);
+
+        // Animate both lines together
+        starGroup.selectAll('line')
+            .transition()
+            .duration(200) // Faster animation (reduced from 1000ms)
+            .attr('x2', endX)
+            .attr('y2', endY)
+            .attr('opacity', 1)
+            .transition()
+            .duration(300)
+            .attr('opacity', 0)
+            .remove();
+
+        // Create next shooting star
+        createShootingStar();
+    }, delay);
+} 

@@ -1077,3 +1077,39 @@ button.disabled:hover {
         font-size: 1.5rem !important; /* Increase font size */
     }
 } 
+
+.shooting-star {
+    stroke: white;
+    stroke-width: 1px;
+    filter: blur(1px);
+    stroke-dasharray: 5, 5;
+    animation: shooting-star-glow 1s infinite alternate;
+}
+
+@keyframes shooting-star-glow {
+    0% { filter: blur(1px) brightness(1); }
+    100% { filter: blur(2px) brightness(1.5); }
+}
+
+.shooting-star-core {
+    stroke: white;
+    stroke-width: 2px;
+    filter: url(#glow);
+    stroke-linecap: round;
+}
+
+.shooting-star-tail {
+    stroke: rgba(255, 255, 255, 0.4);
+    stroke-width: 4px;
+    filter: url(#blur);
+    stroke-linecap: round;
+}
+
+/* Add these SVG filters to your defs */
+#glow {
+    filter: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='glow'%3E%3CfeGaussianBlur stdDeviation='1' result='blur'/%3E%3CfeComposite in='SourceGraphic' in2='blur' operator='over'/%3E%3C/filter%3E%3C/svg%3E#glow");
+}
+
+#blur {
+    filter: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='blur'%3E%3CfeGaussianBlur stdDeviation='2'/%3E%3C/filter%3E%3C/svg%3E#blur");
+}
