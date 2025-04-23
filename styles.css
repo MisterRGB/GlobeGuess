@@ -134,7 +134,7 @@ button:active {
 
 .timer, .score, .countries-left {
     padding: 6px 12px !important;
-    font-size: 12px !important;
+    font-size: 1em !important;
     margin: 4px 0 !important;
 }
 
@@ -1315,4 +1315,12 @@ p {
     color: var(--md-on-surface);
     font-size: 1rem; /* 16px */
     margin: 0.75rem 0;
+}
+
+.game-info .button-group {
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 10px !important;
+    justify-content: center !important;
+    width: 100% !important;
 } 
