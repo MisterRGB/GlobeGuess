@@ -1323,4 +1323,8 @@ p {
     gap: 10px !important;
     justify-content: center !important;
     width: 100% !important;
+}
+
+.country.hidden {
+    display: none;
 } 
