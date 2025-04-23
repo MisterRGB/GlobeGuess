@@ -55,7 +55,9 @@ const elements = {
         wrong: document.getElementById('wrong-sound'),
         click: document.getElementById('click-sound')
     },
-    fullscreenToggle: null
+    fullscreenToggle: null,
+    toggleStars: document.getElementById('toggle-stars-game'),
+    music: null
 };
 
 // Add this after the DOM elements definition
@@ -726,28 +728,44 @@ function dragged(event) {
 
 // Start the game with selected mode
 function startGame(mode) {
+    // Disable and grey out the clicked button
+    const clickedButton = mode === 'easy' ? elements.modeEasy : elements.modeHard;
+    clickedButton.disabled = true;
+    clickedButton.classList.add('disabled');
+
+    // Reset the other button (if needed)
+    const otherButton = mode === 'easy' ? elements.modeHard : elements.modeEasy;
+    otherButton.disabled = false;
+    otherButton.classList.remove('disabled');
+
+    // Hide the stars toggle button
+    if (elements.toggleStars) {
+        elements.toggleStars.style.display = 'none';
+    }
+
+    // Rest of the function...
     config.gameMode = mode;
     config.gameInProgress = true;
     config.score = 0;
     elements.score.textContent = config.score;
-    
+
     // Hide start screen
     document.getElementById('start-screen').classList.add('hidden');
-    
+
     // Show game info panel
     elements.gameInfo.classList.remove('hidden');
-    
+
     // Mobile-specific height change
     if (isMobile()) {
         document.getElementById('globe').style.height = '125%';
     }
-    
+
     // Clear any previous countries and boundaries
     globeGroup.selectAll('.country, .country-boundary').remove();
-    
+
     // Load countries with the selected mode
     loadGeoData();
-    
+
     // Start the first round
     startNewRound();
 }
@@ -775,6 +793,17 @@ elements.resetGame.addEventListener('click', () => {
 
 // Reset the game
 function resetGame() {
+    // Show the stars toggle button
+    if (elements.toggleStars) {
+        elements.toggleStars.style.display = 'flex'; // Or 'block', depending on your styling
+    }
+
+    // Reset mode buttons
+    elements.modeEasy.disabled = false;
+    elements.modeEasy.classList.remove('disabled');
+    elements.modeHard.disabled = false;
+    elements.modeHard.classList.remove('disabled');
+
     // Hide game info panel (returns to start screen)
     document.getElementById('game-info-container').classList.add('hidden');
     
@@ -1170,4 +1199,24 @@ if (isMobile()) {
     const mobileScale = projection.scale() * 0.7;
     projection.scale(mobileScale);
 }
+
+// Update the toggleStars function
+function toggleStars() {
+    const starsGroup = svg.select('.stars');
+    const isHidden = starsGroup.style('display') === 'none';
+    
+    if (isHidden) {
+        starsGroup.style('display', 'block');
+        elements.toggleStars.classList.add('active');
+    } else {
+        starsGroup.style('display', 'none');
+        elements.toggleStars.classList.remove('active');
+    }
+}
+
+// Add event listener to the stars toggle button
+if (elements.toggleStars) {
+    elements.toggleStars.addEventListener('click', toggleStars);
+}
+
 

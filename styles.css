@@ -644,6 +644,7 @@ button.disabled:hover {
     .game-info {
         padding: 10px !important;
         gap: 6px !important;
+        border-radius: 0 0 16px 16px !important; /* Remove top-left and top-right curves */
     }
 
     .game-info h2 {
@@ -1327,4 +1328,160 @@ p {
 
 .country.hidden {
     display: none;
+}
+
+/* Add to styles.css */
+.toggle-options {
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+    margin: 20px 0;
+    justify-content: center;
+}
+
+.toggle-button {
+    background-color: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    padding: 10px 15px;
+    border-radius: 20px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: background-color 0.2s, transform 0.1s;
+    flex: 1;
+    max-width: 150px;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.toggle-button:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+    transform: translateY(-1px);
+}
+
+.toggle-button:active {
+    transform: translateY(0);
+}
+
+.toggle-button.active {
+    background-color: var(--md-sys-color-primary);
+    border-color: var(--md-sys-color-primary);
+}
+
+.toggle-button .icon {
+    margin-left: 10px;
+    font-size: 1.2em;
+}
+
+.toggle-button.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background-color: rgba(255, 255, 255, 0.1) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+.toggle-button.disabled:hover {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+    transform: none !important;
+}
+
+.mode-buttons button.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background-color: rgba(255, 255, 255, 0.1) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+.mode-buttons button.disabled:hover {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Remove the toggle-options container from the start screen */
+.start-screen .toggle-options {
+    display: none;
+}
+
+/* Style the stars toggle button in the game */
+.stars-toggle-container {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    z-index: 1000;
+}
+
+.stars-toggle-container .toggle-button {
+    background-color: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    padding: 10px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s, transform 0.1s;
+    width: 40px;
+    height: 40px;
+}
+
+.stars-toggle-container .toggle-button:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+    transform: translateY(-1px);
+}
+
+.stars-toggle-container .toggle-button:active {
+    transform: translateY(0);
+}
+
+.stars-toggle-container .toggle-button.active {
+    background-color: var(--md-sys-color-primary);
+    border-color: var(--md-sys-color-primary);
+}
+
+.stars-toggle-container .toggle-button .icon {
+    font-size: 1.2em;
+    margin: 0;
+}
+
+/* Mobile-specific positioning */
+@media (max-width: 768px) {
+    .stars-toggle-container {
+        bottom: auto; /* Remove bottom positioning */
+        top: 20px;   /* Position at the top */
+        right: 20px; /* Keep right alignment */
+    }
+} 
+
+/* General button styling */
+button, .toggle-button, .mode-button {
+    color: #333; /* Dark grey text */
+    /* ... existing button styles ... */
+}
+
+/* Specific button classes */
+.mode-easy, .mode-hard, .next-country, .reset-game, .toggle-stars-game {
+    color: #333 !important; /* Ensure dark grey text */
+}
+
+/* Hover and active states */
+button:hover, .toggle-button:hover, .mode-button:hover {
+    color: #333; /* Maintain dark grey on hover */
+}
+
+button:active, .toggle-button:active, .mode-button:active {
+    color: #333; /* Maintain dark grey when active */
+}
+
+/* Disabled state */
+button:disabled, .toggle-button:disabled, .mode-button:disabled {
+    color: #444 !important; /* Apply darker grey to all disabled buttons if desired */
+    opacity: 0.7;
+}
+
+/* Disabled state for Next Country button */
+.next-country:disabled {
+    color: #444 !important; /* Darker grey for disabled text */
+    opacity: 0.7;
 } 
