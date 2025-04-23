@@ -31,7 +31,7 @@ const config = {
     guessMarker: null,    // Reference to the guess marker element
     travelLine: null,      // Reference to the travel line element
     isFullscreen: false,
-    pendingFullscreen: false
+    fullscreenRequested: false
 };
 
 // DOM elements
@@ -204,18 +204,6 @@ function initGlobe() {
 
     // Apply initial theme
     updateTheme();
-
-    // For first load, show a prompt instead of auto-fullscreen
-    if (!localStorage.getItem('fullscreenPromptShown')) {
-        setTimeout(() => {
-            const shouldFullscreen = confirm('For the best experience, we recommend fullscreen mode. Would you like to enable it now?');
-            if (shouldFullscreen) {
-                // Set flag to attempt fullscreen on first user click
-                config.pendingFullscreen = true;
-            }
-            localStorage.setItem('fullscreenPromptShown', 'true');
-        }, 1000);
-    }
 }
 
 // Create 3D stars with different depths
@@ -1171,65 +1159,16 @@ function updateTheme() {
 // Call this once during initialization
 updateTheme();
 
-// Create fullscreen toggle button (same as before)
-elements.fullscreenToggle = document.createElement('div');
-elements.fullscreenToggle.className = 'fullscreen-toggle';
-elements.fullscreenToggle.innerHTML = '⛶';
-elements.fullscreenToggle.style.position = 'absolute';
-elements.fullscreenToggle.style.bottom = '20px';
-elements.fullscreenToggle.style.right = '20px';
-elements.fullscreenToggle.style.zIndex = '1000';
-elements.fullscreenToggle.style.cursor = 'pointer';
-elements.fullscreenToggle.style.fontSize = '24px';
-elements.fullscreenToggle.style.color = 'white';
-elements.fullscreenToggle.style.textShadow = '0 0 5px black';
-document.body.appendChild(elements.fullscreenToggle);
-
-// Fullscreen functions
-function enterFullscreen() {
-    if (!document.fullscreenElement) {
-        document.documentElement.requestFullscreen()
-            .then(() => {
-                config.isFullscreen = true;
-                elements.fullscreenToggle.textContent = '⛶';
-            })
-            .catch(err => {
-                console.log('Fullscreen error:', err);
-                config.pendingFullscreen = false;
-            });
-    }
+// For any dynamically created elements, ensure they use the same classes
+function createUIElement() {
+    const element = document.createElement('div');
+    element.className = 'ui-panel'; // Use consistent class names
+    // ...
 }
 
-function exitFullscreen() {
-    if (document.fullscreenElement) {
-        document.exitFullscreen()
-            .then(() => {
-                config.isFullscreen = false;
-                elements.fullscreenToggle.textContent = '⛶';
-            });
-    }
-}
-
-function toggleFullscreen() {
-    if (config.isFullscreen) {
-        exitFullscreen();
-    } else {
-        enterFullscreen();
-    }
-}
-
-// Event listeners
-elements.fullscreenToggle.addEventListener('click', toggleFullscreen);
-document.addEventListener('fullscreenchange', () => {
-    config.isFullscreen = !!document.fullscreenElement;
-    elements.fullscreenToggle.textContent = config.isFullscreen ? '⛶' : '⛶';
-    config.pendingFullscreen = false;
-});
-
-// Add this click handler to attempt fullscreen on any click if pending
-document.addEventListener('click', () => {
-    if (config.pendingFullscreen) {
-        enterFullscreen();
-    }
+// Or update existing elements
+document.querySelectorAll('.ui-element').forEach(el => {
+    el.style.backgroundColor = 'rgba(30, 30, 30, 0.95)';
+    el.style.color = '#e2e2e6';
 });
 

@@ -5,10 +5,11 @@
 }
 
 body {
-    font-family: Arial, sans-serif;
-    background-color: #000;
-    color: #f5f5f5;
+    font-family: 'Roboto', sans-serif;
+    background-color: var(--md-surface);
+    color: var(--md-on-surface);
     overflow: hidden;
+    line-height: 1.5;
 }
 
 .container {
@@ -90,19 +91,23 @@ body {
 }
 
 button {
-    background-color: #2c7be5;
-    color: white;
+    background-color: var(--md-sys-color-secondary);
+    color: var(--md-sys-color-secondary);
     border: none;
-    padding: 10px 15px;
-    margin: 10px 0;
-    border-radius: 5px;
+    padding: 12px 24px;
+    border-radius: 20px;
+    font-weight: 500;
     cursor: pointer;
-    width: 100%;
-    transition: background-color 0.3s;
+    transition: background-color 0.2s, transform 0.1s;
 }
 
 button:hover {
-    background-color: #1a68d1;
+    background-color: var(--md-sys-color-secondary);
+    transform: translateY(-1px);
+}
+
+button:active {
+    transform: translateY(0);
 }
 
 .game-mode-selection {
@@ -122,7 +127,7 @@ button:hover {
     font-size: 1.5em;
     margin: 12px 0;
     font-weight: 600;
-    color: var(--md-sys-color-primary, #6ea6ff);
+    color: var(--md-primary);
     display: block;
     text-align: center;
 }
@@ -316,40 +321,52 @@ button:hover {
 
 /* Blue-themed Material You Colors */
 :root {
-  --md-sys-color-primary: #1a73e8;
-  --md-sys-color-on-primary: #ffffff;
-  --md-sys-color-primary-container: #d3e3fd;
-  --md-sys-color-on-primary-container: #001d35;
-  --md-sys-color-secondary: #5a7ab8;
-  --md-sys-color-on-secondary: #ffffff;
-  --md-sys-color-secondary-container: #d8e2ff;
-  --md-sys-color-on-secondary-container: #111c2b;
-  --md-sys-color-surface: #f8f9fa;
-  --md-sys-color-on-surface: #1a1c1e;
-  --md-sys-color-surface-variant: #e1e2ec;
-  --md-sys-color-on-surface-variant: #44464f;
-  --md-sys-color-outline: #74777f;
-  --md-sys-color-shadow: #000000;
-  --top-bar-height: 75px;
+    /* Light Mode Defaults */
+    --md-primary: #6750A4;
+    --md-on-primary: #FFFFFF;
+    --md-secondary: #625B71;
+    --md-on-secondary: #FFFFFF;
+    --md-surface: #FFFBFE;
+    --md-on-surface: #1C1B1F;
+    --md-error: #B3261E;
+    --md-sys-color-primary: #1a73e8;
+    --md-sys-color-on-primary: #ffffff;
+    --md-sys-color-primary-container: #d3e3fd;
+    --md-sys-color-on-primary-container: #001d35;
+    --md-sys-color-secondary: #5a7ab8;
+    --md-sys-color-on-secondary: #ffffff;
+    --md-sys-color-secondary-container: #d8e2ff;
+    --md-sys-color-on-secondary-container: #111c2b;
+    --md-sys-color-surface-variant: #e1e2ec;
+    --md-sys-color-on-surface-variant: #44464f;
+    --md-sys-color-outline: #74777f;
+    --md-sys-color-shadow: #000000;
+    --top-bar-height: 75px;
 }
 
-/* Dark mode */
 @media (prefers-color-scheme: dark) {
-  :root {
-    --md-sys-color-primary: #a8c7ff;
-    --md-sys-color-on-primary: #002f66;
-    --md-sys-color-primary-container: #004493;
-    --md-sys-color-on-primary-container: #d6e3ff;
-    --md-sys-color-secondary: #b0c6ff;
-    --md-sys-color-on-secondary: #1a2f4d;
-    --md-sys-color-secondary-container: #3a4f6d;
-    --md-sys-color-on-secondary-container: #d6e3ff;
-    --md-sys-color-surface: #1a1c1e;
-    --md-sys-color-on-surface: #e2e2e6;
-    --md-sys-color-surface-variant: #44464f;
-    --md-sys-color-on-surface-variant: #c4c5d0;
-    --md-sys-color-outline: #8e9099;
-  }
+    :root {
+        /* Dark Mode Overrides */
+        --md-primary: #D0BCFF;
+        --md-on-primary: #381E72;
+        --md-secondary: #CCC2DC;
+        --md-on-secondary: #332D41;
+        --md-surface: #1C1B1F;
+        --md-on-surface: #E6E1E5;
+        --md-error: #F2B8B5;
+        --md-sys-color-primary: #a8c7ff;
+        --md-sys-color-on-primary: #002f66;
+        --md-sys-color-primary-container: #004493;
+        --md-sys-color-on-primary-container: #d6e3ff;
+        --md-sys-color-secondary: #b0c6ff;
+        --md-sys-color-on-secondary: #1a2f4d;
+        --md-sys-color-secondary-container: #3a4f6d;
+        --md-sys-color-on-secondary-container: #d6e3ff;
+        --md-sys-color-surface: #1a1c1e;
+        --md-sys-color-surface-variant: #44464f;
+        --md-sys-color-on-surface-variant: #c4c5d0;
+        --md-sys-color-outline: #8e9099;
+    }
 }
 
 /* Start Screen - Android 15 Style */
@@ -358,7 +375,7 @@ button:hover {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  background-color: var(--md-sys-color-surface);
+  background-color: rgba(30, 30, 30, 0.95);
   padding: 32px;
   border-radius: 28px;
   text-align: center;
@@ -379,7 +396,7 @@ button:hover {
 }
 
 .start-screen p {
-  color: var(--md-sys-color-on-surface);
+  color: white;
   margin-bottom: 24px;
   line-height: 1.5;
   font-size: 14px;
@@ -453,8 +470,8 @@ h3 {
 
 /* Buttons */
 button {
-  background-color: var(--md-sys-color-primary);
-  color: var(--md-sys-color-on-primary);
+  background-color: var(--md-sys-color-secondary);
+  color: var(--md-on-primary);
   border: none;
   padding: 12px 24px;
   border-radius: 20px;
@@ -633,6 +650,7 @@ button.disabled:hover {
     .game-info h2,
     #country-to-guess {
         font-size: 1.2em;
+        color:var(--md-sys-color-secondary);
     }
 
     .game-info div {
@@ -1285,4 +1303,21 @@ button.disabled:hover {
 
 .fullscreen-toggle:hover {
     opacity: 0.8;
+}
+
+/* === Buttons === */
+button.secondary {
+    background-color: var(--md-secondary);
+    color: var(--md-on-secondary);
+}
+
+button.error {
+    background-color: var(--md-error);
+    color: white;
+}
+
+p {
+    color: var(--md-on-surface);
+    font-size: 1rem; /* 16px */
+    margin: 0.75rem 0;
 } 
