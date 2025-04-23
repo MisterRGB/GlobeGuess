@@ -363,8 +363,12 @@ function drawCountries(countries) {
 
 // Handle country click
 function handleCountryClick(event, d) {
+    // Initial guards remain the same
     if (!config.gameInProgress || !config.currentCountry) return;
-    
+
+    // Immediately mark the game as "waiting for next round" to prevent multiple clicks
+    config.gameInProgress = false;
+
     playSound(elements.sounds.click);
     
     const guessedCountryId = d.id;
@@ -442,7 +446,7 @@ function handleCountryClick(event, d) {
     
     // Stop timer but keep rotation enabled
     clearInterval(config.timer);
-    config.rotating = false; // Disable rotation during zoom
+    // config.rotating = false; // Let rotation continue if desired, or keep false during zoom
     
     // Enable next country button
     elements.nextCountry.disabled = false;
@@ -483,10 +487,7 @@ function handleCountryClick(event, d) {
         })
         .on("end", function() {
             // Show country info after zoom completes
-    showCountryInfo(targetCountry);
-    
-    // Update game status (but don't disable interaction)
-    config.gameInProgress = false;
+            showCountryInfo(targetCountry);
         });
 }
 
@@ -630,8 +631,11 @@ function startNewRound() {
         elements.rightPanel.classList.add('hidden');
     }
     
-    // Clear previous guess markers
+    // Clear previous guess markers AND their references
     globeGroup.selectAll('.guess-marker, .travel-line').remove();
+    config.guessMarker = null;
+    config.travelLine = null;
+    config.lastGuess = null;
     
     // Disable next country button at start of round
     if (elements.nextCountry) {
@@ -1043,18 +1047,38 @@ document.getElementById('make-guess').addEventListener('click', () => {
 */
 
 function animateTravelLine(startCoords, endCoords) {
-    if (!config.travelLine || !startCoords || !endCoords) return;
-    
-    // Calculate the full path
+    // Initial guard remains
+    if (!config.travelLine || !startCoords || !endCoords) {
+         console.warn("animateTravelLine called with null travelLine or coordinates");
+         return;
+    }
+
     const pathData = `M${startCoords[0]},${startCoords[1]}L${endCoords[0]},${endCoords[1]}`;
-    
-    // Get the total length of the path
-    const pathNode = config.travelLine.node();
+
+    // === Add more robust checks ===
+    const travelLineSelection = config.travelLine; // Use a local variable for safety
+
+    // Check if the selection is valid and not empty before getting the node
+    if (!travelLineSelection || travelLineSelection.empty()) {
+        console.error("Travel line selection is null or empty before getting node in animateTravelLine.");
+        return; // Exit if the selection is bad
+    }
+
+    const pathNode = travelLineSelection.node();
+
+    // Check if the node itself exists
+    if (!pathNode) {
+         console.error("Travel line node is null in animateTravelLine.");
+         return; // Exit if node doesn't exist
+    }
+    // === End of added checks ===
+
+    // Set the path data and get length using the confirmed node
     pathNode.setAttribute('d', pathData);
     const length = pathNode.getTotalLength();
-    
-    // Reset the path for animation
-    config.travelLine
+
+    // Animate using the safe local variable
+    travelLineSelection
         .attr('stroke-dasharray', `${length},${length}`)
         .attr('stroke-dashoffset', length)
         .transition()
@@ -1062,8 +1086,21 @@ function animateTravelLine(startCoords, endCoords) {
         .ease(d3.easeLinear)
         .attr('stroke-dashoffset', 0)
         .on('end', () => {
-            // After animation completes, set the final path
-            config.travelLine.attr('d', pathData);
+            // Check if the specific travel line element we animated still exists in the DOM
+            const nodeStillExists = travelLineSelection.node();
+
+            // Also check if the global reference hasn't been nulled/replaced in the meantime
+            const currentGlobalTravelLine = config.travelLine;
+
+            if (nodeStillExists && currentGlobalTravelLine === travelLineSelection) {
+                // Only set the final 'd' attribute if:
+                // 1. The SVG <path> element itself is still in the document.
+                // 2. The global config.travelLine still refers to *this specific* D3 selection.
+                travelLineSelection.attr('d', pathData);
+            } else {
+                // Log instead of warn, as this is an expected outcome if the user clicks "Next" quickly
+                console.log("Travel line animation finished after the line was removed or replaced.");
+            }
         });
 }
 
