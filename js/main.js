@@ -33,7 +33,8 @@ const config = {
     isFullscreen: false,
     fullscreenRequested: false,
     correctGuesses: 0,
-    totalGuesses: 0
+    totalGuesses: 0,
+    countryNameLabel: null, // Add this line
 };
 
 // DOM elements
@@ -60,7 +61,9 @@ const elements = {
     fullscreenToggle: null,
     toggleStars: document.getElementById('toggle-stars-game'),
     music: null,
-    guessAccuracy: document.getElementById('guess-accuracy')
+    guessAccuracy: document.getElementById('guess-accuracy'),
+    countriesLeftContainer: document.querySelector('.countries-left'),
+    countriesLeftTextSpan: document.getElementById('countries-left')
 };
 
 // Add this after the DOM elements definition
@@ -106,7 +109,29 @@ let touchState = {
     initialScale: null
 };
 
-// Add this mapping object and function (e.g., near the top or before showCountryInfo)
+// Move countryCodeMapping to a separate data file (data/countryCodes.json)
+// and load it asynchronously at startup
+
+// Add this near the top with other utility functions
+function isMobile() {
+    return window.innerWidth <= 768;
+}
+
+// Add this with other utility functions
+function handleResize() {
+    if (isMobile() && config.gameInProgress) {
+        document.getElementById('globe').style.height = '125%';
+    } else {
+        document.getElementById('globe').style.height = '100%';
+    }
+}
+
+// Add this near other variable declarations
+
+// Add this near the top with other config variables
+const FORCE_DARK_MODE = true; // Set to false to revert to system preference
+
+// Mapping from numeric ID to alpha-2 code (Restored)
 const countryCodeMapping = {
     "004": "af", "008": "al", "012": "dz", "016": "as", "020": "ad", "024": "ao", "028": "ag", "031": "az", "032": "ar",
     "036": "au", "040": "at", "044": "bs", "048": "bh", "050": "bd", "051": "am", "052": "bb", "056": "be", "060": "bm",
@@ -136,33 +161,14 @@ const countryCodeMapping = {
     "800": "ug", "804": "ua", "807": "mk", "818": "eg", "826": "gb", "831": "gg", "832": "je", "833": "im", "834": "tz",
     "840": "us", "850": "vi", "854": "bf", "858": "uy", "860": "uz", "862": "ve", "876": "wf", "882": "ws", "887": "ye",
     "894": "zm"
-    // Note: Antarctica (010) and some disputed territories might not have standard codes/flags
 };
 
+// Function to get alpha-2 code from numeric ID (Restored)
 function getAlpha2Code(numericId) {
     // Ensure numericId is a string, padded if needed (e.g., '8' -> '008')
     const paddedId = String(numericId).padStart(3, '0');
     return countryCodeMapping[paddedId];
 }
-
-// Add this near the top with other utility functions
-function isMobile() {
-    return window.innerWidth <= 768;
-}
-
-// Add this with other utility functions
-function handleResize() {
-    if (isMobile() && config.gameInProgress) {
-        document.getElementById('globe').style.height = '125%';
-    } else {
-        document.getElementById('globe').style.height = '100%';
-    }
-}
-
-// Add this near other variable declarations
-
-// Add this near the top with other config variables
-const FORCE_DARK_MODE = true; // Set to false to revert to system preference
 
 // Initialize the globe
 function initGlobe() {
@@ -209,36 +215,38 @@ function initGlobe() {
 
     // Apply initial theme
     updateTheme();
+
+    // Call this at the end of initGlobe()
+    setupEventListeners();
 }
 
-// Create 3D stars with different depths
+// Optimized createStars function
 function createStars() {
     const stars = [];
     const globeRadius = projection.scale();
     
+    // Pre-calculate values outside loop
+    const radius = globeRadius * config.starFieldRadius;
+    const minDist = 0.3;
+    const maxDist = 1;
+    
     for (let i = 0; i < config.starCount; i++) {
-        // Generate random 3D coordinates within a sphere
-        let x, y, z, distance;
-        do {
-            x = Math.random() * 2 - 1; // -1 to 1
-            y = Math.random() * 2 - 1;
-            z = Math.random() * 2 - 1;
-            distance = Math.sqrt(x*x + y*y + z*z);
-        } while (distance > 1 || distance < 0.3); // Keep stars in a shell
+        // More efficient random coordinate generation
+        const theta = Math.random() * Math.PI * 2;
+        const phi = Math.acos(2 * Math.random() - 1);
+        const r = Math.cbrt(Math.random() * (maxDist**3 - minDist**3) + minDist**3);
         
-        // Scale to star field dimensions
-        x *= globeRadius * config.starFieldRadius;
-        y *= globeRadius * config.starFieldRadius;
-        z *= config.starFieldDepth;
+        const x = r * Math.sin(phi) * Math.cos(theta) * radius;
+        const y = r * Math.sin(phi) * Math.sin(theta) * radius;
+        const z = r * Math.cos(phi) * config.starFieldDepth;
         
         stars.push({ x, y, z });
     }
     
-    // Create star elements
+    // Batch DOM updates
     starsGroup.selectAll('.star')
         .data(stars)
-        .enter()
-        .append('circle')
+        .join('circle')
         .attr('class', 'star')
         .attr('r', config.starSize)
         .attr('data-x', d => d.x)
@@ -368,7 +376,7 @@ function handleCountryClick(event, d) {
 
     // Immediately mark the game as "waiting for next round" to prevent multiple clicks
     config.gameInProgress = false;
-
+    
     playSound(elements.sounds.click);
     
     const guessedCountryId = d.id;
@@ -466,28 +474,44 @@ function handleCountryClick(event, d) {
             const s = d3.interpolate(projection.scale(), zoomScale);
             return function(t) {
                 projection.rotate(r(t)).scale(s(t));
-                globeGroup.selectAll('path').attr('d', path);
+                const pathGenerator = d3.geoPath().projection(projection); // Use generator
+                globeGroup.selectAll('path.country').attr('d', pathGenerator); // Update only country paths
                 globeGroup.select('.sphere').attr('r', projection.scale());
                 
-                // Update guess marker position
-                if (config.guessMarker) {
+                // Update guess marker position (with safety checks)
+                if (config.guessMarker && config.lastGuess) {
                     const newPos = projection(config.lastGuess.geoCoords);
                     config.guessMarker
                         .attr('cx', newPos[0])
                         .attr('cy', newPos[1]);
                 }
                 
-                // Update travel line
-                if (config.travelLine) {
+                // Update travel line (with safety checks)
+                if (config.travelLine && config.lastGuess) {
                     const newTargetPos = projection(config.lastGuess.targetCentroid);
                     config.travelLine
                         .attr('d', `M${projection(config.lastGuess.geoCoords)[0]},${projection(config.lastGuess.geoCoords)[1]}L${newTargetPos[0]},${newTargetPos[1]}`);
                 }
+
+                // === Update Country Name Label Position ===
+                if (config.countryNameLabel && config.lastGuess) {
+                    const targetCentroid = config.lastGuess.targetCentroid;
+                    const newLabelPos = projection(targetCentroid);
+                    if (newLabelPos && !isNaN(newLabelPos[0]) && !isNaN(newLabelPos[1])) {
+                        config.countryNameLabel
+                            .attr('x', newLabelPos[0])
+                            .attr('y', newLabelPos[1] - 10) // Keep offset
+                            .style('display', 'block');
+                    } else {
+                        config.countryNameLabel.style('display', 'none'); // Hide if off-screen
+                    }
+                }
+                // =======================================
             };
         })
         .on("end", function() {
             // Show country info after zoom completes
-            showCountryInfo(targetCountry);
+    showCountryInfo(targetCountry);
         });
 }
 
@@ -631,11 +655,12 @@ function startNewRound() {
         elements.rightPanel.classList.add('hidden');
     }
     
-    // Clear previous guess markers AND their references
-    globeGroup.selectAll('.guess-marker, .travel-line').remove();
+    // Clear previous guess markers, lines, AND label
+    globeGroup.selectAll('.guess-marker, .travel-line, .country-name-label').remove();
     config.guessMarker = null;
     config.travelLine = null;
     config.lastGuess = null;
+    config.countryNameLabel = null;
     
     // Disable next country button at start of round
     if (elements.nextCountry) {
@@ -684,8 +709,21 @@ function startTimer() {
 
 // Update the countries left counter
 function updateCountriesLeft() {
-    const countriesLeft = config.allCountries.length - config.guessedCountries.length;
-    elements.countriesLeft.textContent = countriesLeft;
+    const totalCountries = config.allCountries.length;
+    const guessedCount = config.guessedCountries.length;
+    const countriesLeftValue = totalCountries - guessedCount;
+    const progressPercent = totalCountries > 0 ? (guessedCount / totalCountries) * 100 : 0;
+
+    // Update the text number span
+    if (elements.countriesLeftTextSpan) {
+        elements.countriesLeftTextSpan.textContent = countriesLeftValue;
+    }
+
+    // Update the CSS custom property on the container element
+    if (elements.countriesLeftContainer) {
+        // Set the --progress-width variable used by the ::before pseudo-element
+        elements.countriesLeftContainer.style.setProperty('--progress-width', `${progressPercent}%`);
+    }
 }
 
 // Start rotating the globe
@@ -803,69 +841,46 @@ elements.resetGame.addEventListener('click', () => {
     resetGame();
 });
 
-// Reset the game
+// Improved reset function with better cleanup
 function resetGame() {
-    // Show the stars toggle button
-    if (elements.toggleStars) {
-        elements.toggleStars.style.display = 'flex'; // Or 'block', depending on your styling
-    }
-
-    // Reset mode buttons
-    elements.modeEasy.disabled = false;
-    elements.modeEasy.classList.remove('disabled');
-    elements.modeHard.disabled = false;
-    elements.modeHard.classList.remove('disabled');
-
-    // Hide game info panel (returns to start screen)
-    document.getElementById('game-info-container').classList.add('hidden');
-    
-    // Show start screen
-    document.getElementById('start-screen').classList.remove('hidden');
-    
     // Clear all visual elements
-    globeGroup.selectAll('.country, .country-boundary, .guess-marker, .travel-line').remove();
+    globeGroup.selectAll('*').remove();
+    
+    // Reset all game state
+    Object.keys(config).forEach(key => {
+        if (key === 'allCountries') return; // Preserve loaded data
+        if (Array.isArray(config[key])) config[key] = [];
+        else if (typeof config[key] === 'number') config[key] = 0;
+        else if (typeof config[key] === 'boolean') config[key] = false;
+        else if (key === 'initialRotation') config[key] = [0, 0, 0];
+        else config[key] = null;
+    });
+    
+    // Reset UI
+    document.getElementById('start-screen').classList.remove('hidden');
+    document.getElementById('game-info-container').classList.add('hidden');
     
     // Reset UI elements
     if (elements.score) elements.score.textContent = '0';
     if (elements.timer) elements.timer.textContent = '00:00';
-    
+
+    // Reset Countries Left text and progress bar
+    const initialCountries = config.allCountries.length > 0 ? config.allCountries.length : '0';
+    if (elements.countriesLeftTextSpan) elements.countriesLeftTextSpan.textContent = initialCountries;
+    if (elements.countriesLeftContainer) elements.countriesLeftContainer.style.setProperty('--progress-width', '0%'); // Reset CSS variable
+
+    if (elements.guessAccuracy) elements.guessAccuracy.textContent = '0%';
+
     // Hide country info panel
     if (elements.rightPanel) {
         elements.rightPanel.classList.add('hidden');
     }
-    
-    // Reset game state
-    config.gameInProgress = false;
-    config.guessedCountries = [];
-    clearInterval(config.timer);
-    
-    // Mobile-specific height reset
-    if (isMobile()) {
-        document.getElementById('globe').style.height = '100%';
-    }
-    
-    // Rest of the function...
-    elements.gameInfo.classList.add('hidden');
-    elements.countryToGuess.textContent = '';
-    elements.countryFacts.innerHTML = '';
-    elements.flagContainer.innerHTML = '';
-    
-    if (config.guessMarker) {
-        config.guessMarker.remove();
-        config.guessMarker = null;
-    }
-    
-    if (config.travelLine) {
-        config.travelLine.remove();
-        config.travelLine = null;
-    }
-    
-    // Reset rotation to initial state
-    config.currentRotation = [...config.initialRotation];
-    updateGlobe();
+
     config.correctGuesses = 0;
     config.totalGuesses = 0;
-    elements.guessAccuracy.textContent = '0%';
+    
+    // Reinitialize
+    initGlobe();
 }
 
 // Initialize the game
@@ -899,21 +914,27 @@ function handleZoom(event) {
     updateGlobe();
 }
 
-// Add this helper function to calculate visibility
+// Memoized country visibility check
+const visibleCountryCache = new Map();
 function isCountryVisible(country, projection) {
+    if (visibleCountryCache.has(country)) {
+        return visibleCountryCache.get(country);
+    }
+    
     const bounds = d3.geoBounds(country);
     const [x1, y1] = projection([bounds[0][0], bounds[0][1]]);
     const [x2, y2] = projection([bounds[1][0], bounds[1][1]]);
     
-    // Check if any part of the country is within viewport
-    return !(isNaN(x1) || isNaN(y1) || isNaN(x2) || isNaN(y2));
+    const visible = !(isNaN(x1) || isNaN(y1) || isNaN(x2) || isNaN(y2));
+    visibleCountryCache.set(country, visible);
+    return visible;
 }
 
-// Modify the updateGlobe function
+// Optimized updateGlobe function
 function updateGlobe() {
     const path = d3.geoPath().projection(projection);
     
-    // Update only visible countries
+    // Batch update visible countries
     globeGroup.selectAll('.country')
         .each(function(d) {
             const visible = isCountryVisible(d, projection);
@@ -922,11 +943,43 @@ function updateGlobe() {
                 .attr('d', visible ? path : null);
         });
 
-    // Update sphere and other elements
+    // Update sphere and stars
     globeGroup.select('.sphere').attr('r', projection.scale());
     updateStars();
     
-    // Rest of existing update logic...
+    // Update guess marker position and visibility
+    if (config.guessMarker && config.lastGuess) {
+        const newPos = projection(config.lastGuess.geoCoords);
+        config.guessMarker
+            .attr('cx', newPos[0])
+            .attr('cy', newPos[1]);
+    }
+
+    // Update travel line position and visibility
+    if (config.travelLine && config.lastGuess) {
+        const newTargetPos = projection(config.lastGuess.targetCentroid);
+        config.travelLine
+            .attr('d', `M${projection(config.lastGuess.geoCoords)[0]},${projection(config.lastGuess.geoCoords)[1]}L${newTargetPos[0]},${newTargetPos[1]}`);
+    }
+
+    // === Update Country Name Label Position ===
+    if (config.countryNameLabel && config.lastGuess) {
+        const targetCentroid = config.lastGuess.targetCentroid;
+        const newLabelPos = projection(targetCentroid);
+        if (newLabelPos && !isNaN(newLabelPos[0]) && !isNaN(newLabelPos[1])) {
+            config.countryNameLabel
+                .attr('x', newLabelPos[0])
+                .attr('y', newLabelPos[1] - 10) // Keep offset
+                .style('display', 'block');
+        } else {
+            // Hide label if its projected position is invalid (e.g., on the back side)
+            config.countryNameLabel.style('display', 'none');
+        }
+    }
+    // =======================================
+
+    // Clear cache on next frame
+    requestAnimationFrame(() => visibleCountryCache.clear());
 }
 
 // Sound handling
@@ -1054,7 +1107,7 @@ function animateTravelLine(startCoords, endCoords) {
     }
 
     const pathData = `M${startCoords[0]},${startCoords[1]}L${endCoords[0]},${endCoords[1]}`;
-
+    
     // === Add more robust checks ===
     const travelLineSelection = config.travelLine; // Use a local variable for safety
 
@@ -1076,7 +1129,7 @@ function animateTravelLine(startCoords, endCoords) {
     // Set the path data and get length using the confirmed node
     pathNode.setAttribute('d', pathData);
     const length = pathNode.getTotalLength();
-
+    
     // Animate using the safe local variable
     travelLineSelection
         .attr('stroke-dasharray', `${length},${length}`)
@@ -1086,19 +1139,37 @@ function animateTravelLine(startCoords, endCoords) {
         .ease(d3.easeLinear)
         .attr('stroke-dashoffset', 0)
         .on('end', () => {
-            // Check if the specific travel line element we animated still exists in the DOM
             const nodeStillExists = travelLineSelection.node();
-
-            // Also check if the global reference hasn't been nulled/replaced in the meantime
             const currentGlobalTravelLine = config.travelLine;
 
             if (nodeStillExists && currentGlobalTravelLine === travelLineSelection) {
-                // Only set the final 'd' attribute if:
-                // 1. The SVG <path> element itself is still in the document.
-                // 2. The global config.travelLine still refers to *this specific* D3 selection.
+                // Travel line finished normally
                 travelLineSelection.attr('d', pathData);
+
+                // === Add Country Name Label ===
+                if (config.lastGuess && config.lastGuess.targetCountry) {
+                    const targetCentroid = config.lastGuess.targetCentroid;
+                    const targetCoords = projection(targetCentroid);
+                    const countryName = config.lastGuess.targetCountry.properties.name;
+
+                    if (targetCoords && countryName) {
+                        // Remove previous label if any (safety check)
+                        if (config.countryNameLabel) {
+                            config.countryNameLabel.remove();
+                        }
+
+                        // Create and position the new label
+                        config.countryNameLabel = globeGroup.append('text')
+                            .attr('class', 'country-name-label')
+                            .attr('x', targetCoords[0])
+                            .attr('y', targetCoords[1] - 10) // Position slightly above the point
+                            .attr('text-anchor', 'middle') // Center the text
+                            .text(countryName);
+                    }
+                }
+                // =============================
+
             } else {
-                // Log instead of warn, as this is an expected outcome if the user clicks "Next" quickly
                 console.log("Travel line animation finished after the line was removed or replaced.");
             }
         });
@@ -1272,6 +1343,36 @@ function updateGuessAccuracy() {
     if (config.totalGuesses === 0) return;
     const accuracy = Math.round((config.correctGuesses / config.totalGuesses) * 100);
     elements.guessAccuracy.textContent = `${accuracy}%`;
+}
+
+// Optimized event handling
+function setupEventListeners() {
+    // Remove all existing listeners first
+    const cleanups = [
+        () => svg.on('wheel', null),
+        () => svg.on('touchstart', null),
+        () => svg.on('touchmove', null),
+        () => svg.on('touchend', null),
+        () => elements.modeEasy.removeEventListener('click', startGame),
+        () => elements.modeHard.removeEventListener('click', startGame),
+        () => elements.nextCountry.removeEventListener('click', startNewRound),
+        () => elements.resetGame.removeEventListener('click', resetGame)
+    ];
+    
+    cleanups.forEach(fn => {
+        try { fn(); } catch (e) { console.warn('Cleanup error:', e); }
+    });
+    
+    // Add optimized listeners
+    svg.on('wheel', handleZoom)
+       .on('touchstart', handleTouchStart)
+       .on('touchmove', handleTouchMove)
+       .on('touchend', handleTouchEnd);
+    
+    elements.modeEasy.addEventListener('click', () => startGame('easy'));
+    elements.modeHard.addEventListener('click', () => startGame('hard'));
+    elements.nextCountry.addEventListener('click', startNewRound);
+    elements.resetGame.addEventListener('click', resetGame);
 }
 
 
