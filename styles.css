@@ -124,19 +124,18 @@ button:active {
 }
 
 #country-to-guess {
-    font-size: 1.5em;
+    font-size: 2em !important;
     margin: 12px 0;
     font-weight: 600;
-    color: var(--md-primary);
+    color: rgb(255, 201, 139) !important;
     display: block;
     text-align: center;
 }
 
 .timer, .score, .countries-left {
-    display: flex;
-    justify-content: space-between;
-    font-size: 12px;
-    margin: 4px 0;
+    padding: 6px 12px !important;
+    font-size: 12px !important;
+    margin: 4px 0 !important;
 }
 
 .instructions {
@@ -643,23 +642,20 @@ button.disabled:hover {
     }
 
     .game-info {
-        padding: 15px;
-        border-radius: 0;
+        padding: 10px !important;
+        gap: 6px !important;
     }
 
-    .game-info h2,
-    #country-to-guess {
-        font-size: 1.2em;
-        color:var(--md-sys-color-secondary);
+    .game-info h2 {
+        margin-bottom: 6px !important;
     }
 
     .game-info div {
-        font-size: 1em;
+        margin: 4px 0 !important;
     }
 
     .game-info button {
-        padding: 10px;
-        font-size: 1em;
+        margin: 3px 0 !important;
     }
 
     .game-info .button-group {
@@ -680,7 +676,7 @@ button.disabled:hover {
         width: 100% !important;
         height: 60px;
         margin: 0 !important;
-        padding: 0 !important;
+        padding: 10px !important;
         transform: none !important;
         background: #ffffff;
         border-radius: 20px 20px 0 0;
@@ -740,10 +736,7 @@ button.disabled:hover {
     }
 
     #country-to-guess {
-        font-size: 1.1em;
-        font-weight: 500;
-        margin: 5px 0 8px 0;
-        text-align: center;
+        margin: 2px 0 !important;
     }
 
     .game-info h2 {
@@ -782,13 +775,8 @@ button.disabled:hover {
 
     /* Make the stats container spread its content (timer/score) */
     .stats-container {
-        display: flex;
-        justify-content: space-between; /* Push timer and score to edges */
-        width: 100%;
-        box-sizing: border-box;
-        padding: 0 10px; /* Add small horizontal padding */
-        margin: 10px 0; /* Keep vertical margin */
-        gap: 0; /* Remove fixed gap, space-between handles it */
+        margin: 3px 0 !important;
+        gap: 3px !important;
     }
 
     /* Ensure timer/score styles are correct and have no extra margins */
@@ -796,11 +784,11 @@ button.disabled:hover {
         display: inline-block; /* Keep their button-like block */
         background-color: rgba(30, 30, 30, 0.9);
         color: white;
-        padding: 8px 16px;
+        padding: 4px 8px !important; /* Compact padding */
         border-radius: 20px;
         /* Remove specific margins if they exist, let flex handle spacing */
-        margin: 0 !important;
-        font-size: 14px;
+        margin: 2px 0 !important;
+        font-size: 0.9em !important; /* Matches button text size */
         font-weight: 500;
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
         border: 1px solid rgba(255, 255, 255, 0.1);
@@ -809,9 +797,13 @@ button.disabled:hover {
     /* Ensure countries-left is still full width */
     .countries-left {
         width: 100% !important;
-        margin: 10px auto; /* Keep vertical margin and centering */
+        margin: 5px auto !important;
         box-sizing: border-box; /* Add box-sizing here too */
         /* Retain other styles like padding, background etc. */
+    }
+
+    .timer, .score, .countries-left {
+        font-size: 0.9em !important; /* Matches button text size */
     }
 }
 
@@ -867,7 +859,7 @@ button.disabled:hover {
 /* Mobile styles */
 @media (max-width: 768px) {
     .right-panel {
-        padding: 15px;
+        padding: 10px !important;
     }
     
     .flag-container h3 {
@@ -879,7 +871,8 @@ button.disabled:hover {
     }
     
     .fact-group {
-        padding: 10px;
+        padding: 8px !important;
+        margin-bottom: 10px !important;
     }
 }
 
@@ -892,7 +885,9 @@ button.disabled:hover {
 }
 
 .flag-header {
-    text-align: center;
+    display: flex;
+    align-items: center;
+    gap: 15px;
     margin-bottom: 20px;
 }
 
@@ -958,7 +953,7 @@ button.disabled:hover {
 /* Mobile styles */
 @media (max-width: 768px) {
     .right-panel {
-        padding: 15px;
+        padding: 10px !important;
     }
     
     .country-flag {
@@ -1142,7 +1137,7 @@ button.disabled:hover {
     }
 
     h2, #country-to-guess {
-        font-size: 1.5rem !important; /* Increase font size */
+        font-size: 3rem !important; /* Increase font size */
     }
 } 
 
