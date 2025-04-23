@@ -66,7 +66,7 @@ elements.resetGame.style.padding = '8px 16px';
 
 // Then define projection
 const projection = d3.geoOrthographic()
-    .scale(config.currentScale)
+    .scale(isMobile() ? Math.min(width, height) * 0.6 : Math.min(width, height) * 0.4)
     .translate([width / 2, height / 2])
     .clipAngle(90)
     .precision(0.1);
