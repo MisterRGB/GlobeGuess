@@ -385,7 +385,7 @@ button:active {
 }
 
 .start-screen h1 {
-  color: var(--md-sys-color-primary);
+  color: rgb(255, 201, 139);
   margin-bottom: 16px;
   font-size: 2.5em;
   font-weight: 500;
