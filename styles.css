@@ -39,6 +39,10 @@ body {
     border-radius: 16px;
     padding: 20px;
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
 }
 
 .game-info h2 {
@@ -645,6 +649,8 @@ button.disabled:hover {
         justify-content: space-around;
         gap: 8px;
         margin-top: 5px;
+        width: 100%;
+        box-sizing: border-box;
     }
 
     .right-panel {
@@ -744,6 +750,50 @@ button.disabled:hover {
         border-radius: 3px;
         margin: 10px auto;
         cursor: pointer;
+    }
+
+    /* Ensure button group takes full width for comparison */
+    .game-info .button-group {
+        display: flex;
+        justify-content: space-around; /* This makes buttons spread out */
+        gap: 8px;
+        margin-top: 5px; /* Adjust spacing as needed */
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    /* Make the stats container spread its content (timer/score) */
+    .stats-container {
+        display: flex;
+        justify-content: space-between; /* Push timer and score to edges */
+        width: 100%;
+        box-sizing: border-box;
+        padding: 0 10px; /* Add small horizontal padding */
+        margin: 10px 0; /* Keep vertical margin */
+        gap: 0; /* Remove fixed gap, space-between handles it */
+    }
+
+    /* Ensure timer/score styles are correct and have no extra margins */
+    .timer, .score {
+        display: inline-block; /* Keep their button-like block */
+        background-color: rgba(30, 30, 30, 0.9);
+        color: white;
+        padding: 8px 16px;
+        border-radius: 20px;
+        /* Remove specific margins if they exist, let flex handle spacing */
+        margin: 0 !important;
+        font-size: 14px;
+        font-weight: 500;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    /* Ensure countries-left is still full width */
+    .countries-left {
+        width: 100% !important;
+        margin: 10px auto; /* Keep vertical margin and centering */
+        box-sizing: border-box; /* Add box-sizing here too */
+        /* Retain other styles like padding, background etc. */
     }
 }
 
@@ -1112,4 +1162,111 @@ button.disabled:hover {
 
 #blur {
     filter: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='blur'%3E%3CfeGaussianBlur stdDeviation='2'/%3E%3C/filter%3E%3C/svg%3E#blur");
+}
+
+/* Style for the time and score containers */
+.timer, .score {
+    display: inline-block;
+    background-color: rgba(30, 30, 30, 0.9);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 20px;
+    margin: 0 5px;
+    font-size: 14px;
+    font-weight: 500;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Container for the timer and score */
+.stats-container {
+    display: flex;
+    gap: 10px;
+    margin: 10px 0;
+    justify-content: center;
+}
+
+/* Remove the existing timer and score styles */
+.game-info .timer, .game-info .score, .game-info .countries-left {
+    display: inline;
+    justify-content: unset;
+    margin: 0;
+}
+
+/* Update the countries-left style for responsive widths */
+.countries-left {
+    display: block;
+    background-color: rgba(30, 30, 30, 0.9);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 20px;
+    margin: 10px auto;
+    font-size: 14px;
+    font-weight: 500;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    text-align: center;
+    box-sizing: border-box;
+    max-width: 100% !important; /* Force wider width */
+}
+
+/* Desktop mode - match single button width */
+@media (min-width: 769px) {
+    .countries-left {
+        max-width: 100% !important; /* Force wider width */
+    }
+}
+
+/* Mobile mode - match combined buttons width */
+@media (max-width: 768px) {
+    .countries-left {
+        width: 100% !important; /* Full width on mobile */
+    }
+}
+
+/* Remove auto horizontal margins if they exist, as flex handles centering */
+.stats-container,
+.countries-left,
+.button-group {
+    margin-left: 0;
+    margin-right: 0;
+    width: 100%; /* Ensure they take up space for centering alignment */
+    /* Keep existing vertical margins if needed, or let 'gap' handle it */
+    /* margin-top: 0; */
+    /* margin-bottom: 0; */
+}
+
+/* Adjust width for countries-left if you still want it constrained */
+.countries-left {
+    /* Keep the width styles from before if desired, */
+    /* otherwise remove them to let it fill the container */
+    /* For example, keep the responsive width: */
+    width: 300px !important; /* Or keep the previous responsive setup */
+    max-width: 100%; /* Prevent overflow */
+}
+
+/* Adjust button group width if needed */
+.button-group {
+     width: 100%; /* Make sure it spans the container */
+     max-width: 300px; /* Optional: constrain width like countries-left */
+     margin: 0 auto; /* Center the button group itself if constrained */
+}
+
+/* You might need to adjust the responsive styles too */
+@media (min-width: 769px) {
+    .countries-left {
+        width: 300px !important; /* Adjust width as needed */
+    }
+    .button-group {
+         max-width: 300px; /* Match desktop width */
+    }
+}
+
+@media (max-width: 768px) {
+    .countries-left {
+        width: 100% !important; /* Full width on mobile */
+    }
+     .button-group {
+         max-width: 100%; /* Full width on mobile */
+     }
 }

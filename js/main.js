@@ -151,6 +151,11 @@ function handleResize() {
     }
 }
 
+// Add this near other variable declarations
+
+// Add this near the top with other config variables
+const isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
+
 // Initialize the globe
 function initGlobe() {
     // Ensure game info is HIDDEN at initialization
@@ -194,10 +199,8 @@ function initGlobe() {
     
     loadGeoData();
 
-    // Add shooting stars group (behind the globe)
-    const shootingStars = svg.append('g')
-        .attr('class', 'shooting-stars')
-        .lower(); // Ensure it's behind everything else
+    // Apply initial theme
+    updateTheme();
 }
 
 // Create 3D stars with different depths
@@ -319,25 +322,23 @@ function drawCountries(countries) {
         .attr('id', d => `country-${d.id}`)
         .attr('data-name', d => d.properties.name)
         .on('click', handleCountryClick);
-    
-    // Remove ALL boundaries in Hard Mode
+
     if (config.gameMode === 'hard') {
+        // Hard mode - remove all borders completely
         countryElements
             .style('stroke', 'none') // Remove borders
-            .style('opacity', 0.8) // Fixed opacity (no hover effect)
-            .on('mouseover', null) // Remove hover events
+            .style('opacity', 0.8) // Fixed opacity
+            .on('mouseover', null) // Remove hover effects
             .on('mouseout', null);
     } else {
-        // Easy Mode behavior with enhanced borders
+        // Easy mode - enhanced borders
         countryElements
-            .attr('opacity', d => 
-                d.id === config.currentCountry?.id ? 1 : 0.3
-            )
+            .attr('opacity', d => d.id === config.currentCountry?.id ? 1 : 0.3)
             .style('stroke', d => 
-                d.id === config.currentCountry?.id ? '#1a73e8' : 'rgba(24, 69, 114, 0.41)'
+                d.id === config.currentCountry?.id ? '#1a73e8' : 'rgba(24, 69, 114, 0.66)'
             )
             .style('stroke-width', d => 
-                d.id === config.currentCountry?.id ? '1px' : '0.8px'
+                d.id === config.currentCountry?.id ? '0.4px' : '0.4px' // Thicker borders
             )
             .on('mouseover', function(d) {
                 if (d.id === config.currentCountry?.id) {
@@ -647,9 +648,6 @@ function startNewRound() {
     config.gameInProgress = true;
     config.rotating = true;
     startRotation();
-
-    // Start shooting stars
-    createShootingStar();
 }
 
 // Start the game timer
@@ -749,9 +747,6 @@ function startGame(mode) {
     
     // Start the first round
     startNewRound();
-
-    // Start shooting stars
-    createShootingStar();
 }
 
 // Update event listeners to use the start screen buttons
@@ -1121,57 +1116,44 @@ document.addEventListener('click', (e) => {
 // Add this to initialization
 window.addEventListener('resize', debounce(handleResize, 200));
 
-function createShootingStar() {
-    if (!config.gameInProgress) return;
-
-    // Random delay between shooting stars (3-8 seconds)
-    const delay = 3000 + Math.random() * 5000;
+// Add this new function to handle theme changes
+function updateTheme() {
+    const isNowDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     
-    setTimeout(() => {
-        const startX = Math.random() * width * 0.3;
-        const startY = Math.random() * height * 0.3;
-        const endX = width * 0.7 + Math.random() * width * 0.3;
-        const endY = height * 0.7 + Math.random() * height * 0.3;
-        
-        // Create shooting star with tail
-        const starGroup = shootingStars.append('g')
-            .attr('class', 'shooting-star-group');
-            
-        // Main line (bright core)
-        starGroup.append('line')
-            .attr('class', 'shooting-star-core')
-            .attr('x1', startX)
-            .attr('y1', startY)
-            .attr('x2', startX)
-            .attr('y2', startY)
-            .attr('stroke', 'white')
-            .attr('stroke-width', 2)
-            .attr('opacity', 0);
+    // Update globe colors
+    globeGroup.select('.sphere')
+        .attr('fill', isNowDark ? '#0d1a26' : '#0d47a1');
+    
+    // Update country colors
+    globeGroup.selectAll('.country')
+        .attr('fill', isNowDark ? '#2a4365' : '#4285f4')
+        .attr('stroke', isNowDark ? '#1e3a8a' : '#1a73e8');
+    
+    // Update UI elements
+    document.documentElement.style.setProperty(
+        '--md-sys-color-primary', 
+        isNowDark ? '#a8c7ff' : '#1a73e8'
+    );
+    
+    document.documentElement.style.setProperty(
+        '--md-sys-color-on-primary', 
+        isNowDark ? '#002f66' : '#ffffff'
+    );
+    
+    // Update text colors
+    const textElements = document.querySelectorAll('.game-info, .right-panel, #country-to-guess');
+    textElements.forEach(el => {
+        el.style.color = isNowDark ? '#e2e2e6' : '#1a1c1e';
+    });
+    
+    // Update background colors
+    const bgElements = document.querySelectorAll('.game-info, .right-panel');
+    bgElements.forEach(el => {
+        el.style.backgroundColor = isNowDark ? 'rgba(30, 30, 30, 0.95)' : 'rgba(240, 240, 240, 0.95)';
+    });
+}
 
-        // Fainter tail
-        starGroup.append('line')
-            .attr('class', 'shooting-star-tail')
-            .attr('x1', startX)
-            .attr('y1', startY)
-            .attr('x2', startX)
-            .attr('y2', startY)
-            .attr('stroke', 'rgba(255, 255, 255, 0.7)')
-            .attr('stroke-width', 4)
-            .attr('opacity', 0);
+// Add media query listener for theme changes
+window.matchMedia('(prefers-color-scheme: dark)').addListener(updateTheme);
 
-        // Animate both lines together
-        starGroup.selectAll('line')
-            .transition()
-            .duration(200) // Faster animation (reduced from 1000ms)
-            .attr('x2', endX)
-            .attr('y2', endY)
-            .attr('opacity', 1)
-            .transition()
-            .duration(300)
-            .attr('opacity', 0)
-            .remove();
-
-        // Create next shooting star
-        createShootingStar();
-    }, delay);
-} 
+// Update the existing :root CSS variables in styles.css to use these dynamic values 
